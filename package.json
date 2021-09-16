@@ -17,6 +17,14 @@
   "devDependencies": {
     "parcel-bundler": "^1.12.5"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mahezsh/create-rescript-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mahezsh/create-rescript-app/issues"
+  },
+  "homepage": "https://github.com/mahezsh/create-rescript-app#readme",
   "bin": {
     "create-rescript-app": "index.js"
   }
