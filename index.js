@@ -1,20 +1,21 @@
 #!/usr/bin/env node
-const path = require("path");
-let fs = require("fs");
-const { execSync } = require("child_process");
-let colors = require("colors");
+const path = require("path"),
+  fs = require("fs"),
+  { execSync } = require("child_process"),
+  colors = require("colors");
 
-let projectName = process.argv[2];
-let projectType = process.argv[3];
+let projectName = process.argv[2],
+  projectType = process.argv[3];
 
-const currentPath = process.cwd();
-const projectPath = path.join(currentPath, projectName);
+const currentPath = process.cwd(),
+  projectPath = path.join(currentPath, projectName);
+
 const basicRepo =
-  "https://github.com/rescript-lang/rescript-project-template.git";
-const defaultRepo = "https://github.com/mahezsh/rescript-template-default.git";
-const nextJsRepo = "https://github.com/ryyppy/rescript-nextjs-template.git";
-const graphqlRepo = "https://github.com/mahezsh/rescript-template-graphql.git";
-const sbRepo = "https://github.com/mahezsh/rescript-template-storybook.git";
+    "https://github.com/rescript-lang/rescript-project-template.git",
+  defaultRepo = "https://github.com/mahezsh/rescript-template-default.git",
+  nextJsRepo = "https://github.com/ryyppy/rescript-nextjs-template.git",
+  graphqlRepo = "https://github.com/mahezsh/rescript-template-graphql.git",
+  sbRepo = "https://github.com/mahezsh/rescript-template-storybook.git";
 
 try {
   fs.mkdirSync(projectPath);
@@ -33,8 +34,8 @@ try {
 
 async function main() {
   try {
-    let repoUrl = basicRepo;
-    let templateName = "default";
+    let repoUrl = defaultRepo,
+      templateName = "default";
 
     switch (projectType) {
       case "-b" || "--basic":
@@ -65,9 +66,12 @@ async function main() {
       `${templateName}`.blue,
       `template\n`
     );
+
     execSync(`git clone --depth 1 ${repoUrl} ${projectPath}`);
     process.chdir(projectPath);
+
     houseKeeping();
+
     console.log(`\nHappy hacking!\n`);
   } catch (error) {
     console.log(error);
@@ -76,12 +80,14 @@ async function main() {
 
 async function houseKeeping() {
   console.log("\nInstalling packages. This might take a couple of seconds.");
+
   execSync("npm install");
   execSync(`find . | grep "\.git/" | xargs rm -rf`);
   execSync("git init");
-  console.log(`\nInitialized a git repository.`);
+  console.log(`\nInitialized a git repository.\n`);
+
   console.log(
-    `\nSuccess!`.green,
+    `✔ Success!`.green,
     `Created ${projectName} at`,
     `${projectPath}`.green
   );
