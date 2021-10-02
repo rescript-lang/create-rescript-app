@@ -5,10 +5,16 @@ const { execSync } = require("child_process");
 let colors = require("colors");
 
 let projectName = process.argv[2];
+let projectType = process.argv[3];
+
 const currentPath = process.cwd();
 const projectPath = path.join(currentPath, projectName);
-const git_repo =
+const basicRepo =
   "https://github.com/rescript-lang/rescript-project-template.git";
+const defaultRepo = "https://github.com/mahezsh/rescript-template-default.git";
+const nextJsRepo = "https://github.com/ryyppy/rescript-nextjs-template.git";
+const graphqlRepo = "https://github.com/mahezsh/rescript-template-graphql.git";
+const sbRepo = "https://github.com/mahezsh/rescript-template-storybook.git";
 
 try {
   fs.mkdirSync(projectPath);
@@ -27,22 +33,58 @@ try {
 
 async function main() {
   try {
-    console.log(`Creating a new Rescript app in`, `${projectPath}\n`.green);
-    execSync(`git clone --depth 1 ${git_repo} ${projectPath}`);
-    process.chdir(projectPath);
-    console.log("\nInstalling packages. This might take a couple of seconds.");
-    execSync("npm install");
-    execSync(`find . | grep "\.git/" | xargs rm -rf`);
-    execSync("git init");
-    console.log(`\nInitialized a git repository.`);
+    let repoUrl = basicRepo;
+    let templateName = "default";
+
+    switch (projectType) {
+      case "-b" || "--basic":
+        repoUrl = basicRepo;
+        templateName = "basic";
+        break;
+      case "-d" || "--default" || undefined:
+        repoUrl = defaultRepo;
+        templateName = "default";
+        break;
+      case "-nx" || "--nextjs":
+        repoUrl = nextJsRepo;
+        templateName = "nextJS";
+        break;
+      case "-gql" || "--graphql":
+        repoUrl = graphqlRepo;
+        templateName = "graphQL";
+        break;
+      case "-sb" || "--storybook":
+        repoUrl = sbRepo;
+        templateName = "storybook";
+        break;
+    }
     console.log(
-      `\nSuccess!`.green,
-      `Created ${projectName} at `,
-      `${projectPath}`.green
+      `\nCreating a new Rescript app in`,
+      `${projectPath}`.green,
+      `from`,
+      `${templateName}`.blue,
+      `template\n`
     );
+    execSync(`git clone --depth 1 ${basicRepo} ${projectPath}`);
+    process.chdir(projectPath);
+    houseKeeping();
     console.log(`\nHappy hacking!\n`);
   } catch (error) {
     console.log(error);
   }
 }
+
+async function houseKeeping() {
+  console.log("\nInstalling packages. This might take a couple of seconds.");
+  execSync("npm install");
+  execSync(`find . | grep "\.git/" | xargs rm -rf`);
+  execSync("git init");
+  console.log(`\nInitialized a git repository.`);
+  console.log(
+    `\nSuccess!`.green,
+    `Created ${projectName} at`,
+    `${projectPath}`.green
+  );
+}
+
 main();
