@@ -1,6 +1,6 @@
 {
   "name": "create-rescript-app",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Create ReScript apps with no build configuration.",
   "main": "index.js",
   "scripts": {
