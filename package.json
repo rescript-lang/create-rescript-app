@@ -25,6 +25,12 @@
     "url": "https://github.com/mahezsh/create-rescript-app/issues"
   },
   "homepage": "https://github.com/mahezsh/create-rescript-app#readme",
+  "keywords": [
+    "rescript",
+    "bootstrap rescript",
+    "rescript app",
+    "rescript start"
+  ],
   "bin": {
     "create-rescript-app": "index.js"
   }
