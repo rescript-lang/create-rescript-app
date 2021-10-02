@@ -65,7 +65,7 @@ async function main() {
       `${templateName}`.blue,
       `template\n`
     );
-    execSync(`git clone --depth 1 ${basicRepo} ${projectPath}`);
+    execSync(`git clone --depth 1 ${repoUrl} ${projectPath}`);
     process.chdir(projectPath);
     houseKeeping();
     console.log(`\nHappy hacking!\n`);
