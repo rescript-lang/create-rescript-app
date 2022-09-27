@@ -35,31 +35,38 @@ try {
 
 function main() {
   try {
-    let repoUrl = defaultRepo;
-    let templateName = "default";
+    let repoUrl;
+    let templateName;
 
     switch (projectType) {
-      case "-b" || "--basic":
+      case "-b":
+      case "--basic":
         repoUrl = basicRepo;
         templateName = "basic";
         break;
-      case "-d" || "--default" || undefined:
-        repoUrl = defaultRepo;
-        templateName = "default";
-        break;
-      case "-nx" || "--nextjs":
+      case "-nx":
+      case "--nextjs":
         repoUrl = nextJsRepo;
         templateName = "nextJS";
         break;
-      case "-gql" || "--graphql":
+      case "-gql":
+      case "--graphql":
         repoUrl = graphqlRepo;
         templateName = "graphQL";
         break;
-      case "-sb" || "--storybook":
+      case "-sb":
+      case "--storybook":
         repoUrl = sbRepo;
         templateName = "storybook";
         break;
+      case "-d":
+      case "--default":
+      default:
+        repoUrl = defaultRepo;
+        templateName = "default";
+        break;
     }
+
     console.log(
       `\nCreating a new Rescript app in`,
       `${projectPath}`.green,
