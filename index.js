@@ -1,21 +1,22 @@
 #!/usr/bin/env node
-const path = require("path"),
-  fs = require("fs"),
-  { execSync } = require("child_process"),
-  colors = require("colors");
+const path = require("path");
+const fs = require("fs");
+const { execSync } = require("child_process");
 
-let projectName = process.argv[2],
-  projectType = process.argv[3];
+require("colors");
+
+const projectName = process.argv[2];
+const projectType = process.argv[3];
 
 const currentPath = process.cwd(),
   projectPath = path.join(currentPath, projectName);
 
 const basicRepo =
-    "https://github.com/rescript-lang/rescript-project-template.git",
-  defaultRepo = "https://github.com/mahezsh/rescript-template-default.git",
-  nextJsRepo = "https://github.com/ryyppy/rescript-nextjs-template.git",
-  graphqlRepo = "https://github.com/mahezsh/rescript-template-graphql.git",
-  sbRepo = "https://github.com/mahezsh/rescript-template-storybook.git";
+  "https://github.com/rescript-lang/rescript-project-template.git";
+const defaultRepo = "https://github.com/mahezsh/rescript-template-default.git";
+const nextJsRepo = "https://github.com/ryyppy/rescript-nextjs-template.git";
+const graphqlRepo = "https://github.com/mahezsh/rescript-template-graphql.git";
+const sbRepo = "https://github.com/mahezsh/rescript-template-storybook.git";
 
 try {
   fs.mkdirSync(projectPath);
@@ -32,10 +33,10 @@ try {
   process.exit(1);
 }
 
-async function main() {
+function main() {
   try {
-    let repoUrl = defaultRepo,
-      templateName = "default";
+    let repoUrl = defaultRepo;
+    let templateName = "default";
 
     switch (projectType) {
       case "-b" || "--basic":
@@ -78,7 +79,7 @@ async function main() {
   }
 }
 
-async function houseKeeping() {
+function houseKeeping() {
   console.log("\nInstalling packages. This might take a couple of seconds.");
 
   execSync("npm install");
