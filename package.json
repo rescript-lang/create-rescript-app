@@ -4,18 +4,12 @@
   "description": "Create ReScript apps with no build configuration.",
   "main": "index.js",
   "scripts": {
-    "start": "parcel index.html",
-    "build": "parcel build index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "colors": "^1.4.0",
-    "shelljs": "^0.8.4"
-  },
-  "devDependencies": {
-    "parcel-bundler": "^1.12.5"
+    "colors": "^1.4.0"
   },
   "repository": {
     "type": "git",
