@@ -4,7 +4,8 @@
   "description": "Create ReScript apps with no build configuration.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "format": "prettier --write ."
   },
   "author": "",
   "license": "ISC",
@@ -27,5 +28,8 @@
   ],
   "bin": {
     "create-rescript-app": "index.js"
+  },
+  "devDependencies": {
+    "prettier": "^2.7.1"
   }
 }
