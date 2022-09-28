@@ -1,21 +1,22 @@
 #!/usr/bin/env node
-const path = require("path"),
-  fs = require("fs"),
-  { execSync } = require("child_process"),
-  colors = require("colors");
+const path = require("path");
+const fs = require("fs");
+const { execSync } = require("child_process");
 
-let projectName = process.argv[2],
-  projectType = process.argv[3];
+require("colors");
+
+const projectName = process.argv[2];
+const projectType = process.argv[3];
 
 const currentPath = process.cwd(),
   projectPath = path.join(currentPath, projectName);
 
 const basicRepo =
-    "https://github.com/rescript-lang/rescript-project-template.git",
-  defaultRepo = "https://github.com/mahezsh/rescript-template-default.git",
-  nextJsRepo = "https://github.com/ryyppy/rescript-nextjs-template.git",
-  graphqlRepo = "https://github.com/mahezsh/rescript-template-graphql.git",
-  sbRepo = "https://github.com/mahezsh/rescript-template-storybook.git";
+  "https://github.com/rescript-lang/rescript-project-template.git";
+const defaultRepo = "https://github.com/mahezsh/rescript-template-default.git";
+const nextJsRepo = "https://github.com/ryyppy/rescript-nextjs-template.git";
+const graphqlRepo = "https://github.com/mahezsh/rescript-template-graphql.git";
+const sbRepo = "https://github.com/mahezsh/rescript-template-storybook.git";
 
 try {
   fs.mkdirSync(projectPath);
@@ -32,33 +33,40 @@ try {
   process.exit(1);
 }
 
-async function main() {
+function main() {
   try {
-    let repoUrl = defaultRepo,
-      templateName = "default";
+    let repoUrl;
+    let templateName;
 
     switch (projectType) {
-      case "-b" || "--basic":
+      case "-b":
+      case "--basic":
         repoUrl = basicRepo;
         templateName = "basic";
         break;
-      case "-d" || "--default" || undefined:
-        repoUrl = defaultRepo;
-        templateName = "default";
-        break;
-      case "-nx" || "--nextjs":
+      case "-nx":
+      case "--nextjs":
         repoUrl = nextJsRepo;
         templateName = "nextJS";
         break;
-      case "-gql" || "--graphql":
+      case "-gql":
+      case "--graphql":
         repoUrl = graphqlRepo;
         templateName = "graphQL";
         break;
-      case "-sb" || "--storybook":
+      case "-sb":
+      case "--storybook":
         repoUrl = sbRepo;
         templateName = "storybook";
         break;
+      case "-d":
+      case "--default":
+      default:
+        repoUrl = defaultRepo;
+        templateName = "default";
+        break;
     }
+
     console.log(
       `\nCreating a new Rescript app in`,
       `${projectPath}`.green,
@@ -78,7 +86,7 @@ async function main() {
   }
 }
 
-async function houseKeeping() {
+function houseKeeping() {
   console.log("\nInstalling packages. This might take a couple of seconds.");
 
   execSync("npm install");
