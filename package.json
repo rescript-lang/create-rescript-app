@@ -1,8 +1,8 @@
 {
   "name": "create-rescript-app",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Quickly create new ReScript apps from project templates.",
-  "main": "index.js",
+  "main": "index.mjs",
   "scripts": {
     "start": "node index.mjs",
     "format": "prettier --write ."
@@ -12,18 +12,21 @@
   "engines": {
     "node": ">=12"
   },
+  "files": [
+    "index.mjs"
+  ],
   "dependencies": {
     "ansi-colors": "^4.1.3",
     "enquirer": "^2.3.6"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mahezsh/create-rescript-app.git"
+    "url": "git+https://github.com/rescript-lang/create-rescript-app.git"
   },
   "bugs": {
-    "url": "https://github.com/mahezsh/create-rescript-app/issues"
+    "url": "https://github.com/rescript-lang/create-rescript-app/issues"
   },
-  "homepage": "https://github.com/mahezsh/create-rescript-app#readme",
+  "homepage": "https://github.com/rescript-lang/create-rescript-app#readme",
   "keywords": [
     "rescript",
     "bootstrap rescript",
@@ -31,7 +34,7 @@
     "rescript start"
   ],
   "bin": {
-    "create-rescript-app": "index.js"
+    "create-rescript-app": "index.mjs"
   },
   "devDependencies": {
     "prettier": "^2.7.1"
