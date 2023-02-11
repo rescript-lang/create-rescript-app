@@ -13,7 +13,8 @@
     "node": ">=12"
   },
   "files": [
-    "index.mjs"
+    "index.mjs",
+    "templates"
   ],
   "dependencies": {
     "ansi-colors": "^4.1.3",
