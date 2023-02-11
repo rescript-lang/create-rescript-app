@@ -5,7 +5,7 @@
   "main": "index.mjs",
   "scripts": {
     "start": "node index.mjs",
-    "format": "prettier --write ."
+    "format": "prettier --write index.mjs"
   },
   "author": "",
   "license": "ISC",
