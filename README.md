@@ -1,11 +1,13 @@
 # create-rescript-app
 
-Quickly create new [ReScript](https://rescript-lang.org/) apps from project templates.
-
-## Quick Start
+Quickly create new [ReScript](https://rescript-lang.org/) apps from project templates:
 
 ```sh
-npx create-rescript-app my-app
-cd my-app
-npm start
+npm create rescript-app
+```
+
+or
+
+```sh
+yarn create rescript-app
 ```
