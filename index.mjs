@@ -46,17 +46,19 @@ async function getParams() {
   ]);
 }
 
-function houseKeeping(projectName, projectPath) {
-  process.chdir(projectPath);
-
+function installPackages() {
   console.log("Installing packages. This might take a couple of seconds...");
 
   execSync("npm install");
   console.log(`Packages installed.`);
+}
 
+function initGitRepo() {
   execSync("git init");
   console.log(`Initialized a git repository.`);
+}
 
+function logSuccess(projectName, projectPath) {
   console.log(`\n${c.green("✔ Success!")} Created ${projectName} at ${c.green(projectPath)}.`);
 
   console.log("\nNext steps:");
@@ -90,7 +92,11 @@ async function main() {
 
   try {
     fs.cpSync(templatePath, projectPath, { recursive: true });
-    houseKeeping(projectName, projectPath);
+    process.chdir(projectPath);
+
+    installPackages();
+    initGitRepo();
+    logSuccess(projectName, projectPath);
   } catch (error) {
     console.log(error);
   }
