@@ -52,11 +52,18 @@ function houseKeeping(projectName, projectPath) {
   console.log("Installing packages. This might take a couple of seconds...");
 
   execSync("npm install");
-  execSync(`find . | grep "\.git/" | xargs rm -rf`);
-  execSync("git init");
+  console.log(`Packages installed.`);
 
-  console.log(`Initialized a git repository.\n`);
-  console.log(`${c.green("✔ Success!")} Created ${projectName} at ${c.green(projectPath)}`);
+  execSync("git init");
+  console.log(`Initialized a git repository.`);
+
+  console.log(`\n${c.green("✔ Success!")} Created ${projectName} at ${c.green(projectPath)}.`);
+
+  console.log("\nNext steps:");
+  console.log(`• ${c.bold("cd " + projectName)}`);
+  console.log(`• ${c.bold("npm run res:dev")} to start the ReScript compiler in watch mode.`);
+  console.log(`• See ${c.bold("README.md")} for more information.`);
+  console.log(`\n${c.bold("Happy hacking!")}`);
 }
 
 async function main() {
@@ -64,6 +71,8 @@ async function main() {
   console.log("This tool will help you set up your new ReScript project quickly.\n");
 
   const { projectName, templateName } = await getParams();
+
+  console.log(); // newline
 
   const templatePath = path.join(__dirname, "templates", templateName);
   const projectPath = path.join(process.cwd(), projectName);
@@ -76,14 +85,12 @@ async function main() {
 
   console.log(
     "Creating a new ReScript project",
-    `in ${c.green(projectPath)} with template ${c.cyan(templateName)}\n`
+    `in ${c.green(projectPath)} with template ${c.cyan(templateName)}.`
   );
 
   try {
     fs.cpSync(templatePath, projectPath, { recursive: true });
     houseKeeping(projectName, projectPath);
-
-    console.log(c.bold("Happy hacking!"));
   } catch (error) {
     console.log(error);
   }
