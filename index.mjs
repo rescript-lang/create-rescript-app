@@ -35,7 +35,7 @@ async function getParams() {
       type: "input",
       name: "projectName",
       message: "What is the name of your new project?",
-      initial: "my-rescript-app",
+      initial: process.argv[2] || "my-rescript-app",
     },
     {
       type: "select",
