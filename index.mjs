@@ -29,6 +29,16 @@ const templates = [
   },
 ];
 
+function validateProjectName(projectName) {
+  const packageNameRegExp = /^[a-z0-9-]+$/;
+
+  if (packageNameRegExp.test(projectName)) {
+    return true;
+  } else {
+    return "Project name may only contain lower case letters, numbers and hyphens.";
+  }
+}
+
 async function getParams() {
   return await enquirer.prompt([
     {
@@ -36,6 +46,7 @@ async function getParams() {
       name: "projectName",
       message: "What is the name of your new project?",
       initial: process.argv[2] || "my-rescript-app",
+      validate: validateProjectName,
     },
     {
       type: "select",
@@ -44,6 +55,17 @@ async function getParams() {
       choices: templates,
     },
   ]);
+}
+
+function replaceLineInFile(filename, search, replace) {
+  const contents = fs.readFileSync(filename, "utf8");
+  const replaced = contents.replace(search, replace);
+  fs.writeFileSync(filename, replaced, "utf8");
+}
+
+function setProjectName(templateName, projectName) {
+  replaceLineInFile("package.json", `"name": "${templateName}"`, `"name": "${projectName}"`);
+  replaceLineInFile("bsconfig.json", `"name": "${templateName}"`, `"name": "${projectName}"`);
 }
 
 function installPackages() {
@@ -94,6 +116,7 @@ async function main() {
     fs.cpSync(templatePath, projectPath, { recursive: true });
     process.chdir(projectPath);
 
+    setProjectName(templateName, projectName);
     installPackages();
     initGitRepo();
     logSuccess(projectName, projectPath);
