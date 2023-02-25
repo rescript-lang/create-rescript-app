@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
-import c from "ansi-colors";
-import enquirer from "enquirer";
+import * as p from "@clack/prompts";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { execSync } from "child_process";
+import { exec } from "child_process";
+import { promisify } from "util";
+import c from "picocolors";
 
 // Get __dirname in an ES6 module
 const __filename = fileURLToPath(import.meta.url);
@@ -13,115 +14,108 @@ const __dirname = path.dirname(__filename);
 
 const templates = [
   {
-    name: "rescript-template-vite",
-    message: "Vite",
+    value: "rescript-template-vite",
+    label: "Vite",
     hint: "Opinionated boilerplate for Vite, Tailwind and ReScript",
   },
   {
-    name: "rescript-template-nextjs",
-    message: "Next.js",
+    value: "rescript-template-nextjs",
+    label: "Next.js",
     hint: "Opinionated boilerplate for Next.js, Tailwind and ReScript",
   },
   {
-    name: "rescript-template-basic",
-    message: "Basic",
+    value: "rescript-template-basic",
+    label: "Basic",
     hint: "Command line hello world app",
   },
 ];
 
-function validateProjectName(projectName) {
-  const packageNameRegExp = /^[a-z0-9-]+$/;
-
-  if (packageNameRegExp.test(projectName)) {
-    return true;
-  } else {
-    return "Project name may only contain lower case letters, numbers and hyphens.";
+function checkCancel(value) {
+  if (p.isCancel(value)) {
+    p.cancel("Project creation cancelled.");
+    process.exit(0);
   }
 }
 
-async function getParams() {
-  return await enquirer.prompt([
-    {
-      type: "input",
-      name: "projectName",
-      message: "What is the name of your new project?",
-      initial: process.argv[2] || "my-rescript-app",
-      validate: validateProjectName,
-    },
-    {
-      type: "select",
-      name: "templateName",
-      message: "Select a template",
-      choices: templates,
-    },
-  ]);
+function validateProjectName(projectName) {
+  const packageNameRegExp = /^[a-z0-9-]+$/;
+
+  if (projectName.trim().length === 0) {
+    return "Project name must not be empty.";
+  }
+
+  if (!packageNameRegExp.test(projectName)) {
+    return "Project name may only contain lower case letters, numbers and hyphens.";
+  }
+
+  const projectPath = path.join(process.cwd(), projectName);
+  if (fs.existsSync(projectPath)) {
+    return `The folder ${projectName} already exist in the current directory.`;
+  }
 }
 
-function replaceLineInFile(filename, search, replace) {
-  const contents = fs.readFileSync(filename, "utf8");
+async function replaceLineInFile(filename, search, replace) {
+  const contents = await fs.promises.readFile(filename, "utf8");
   const replaced = contents.replace(search, replace);
-  fs.writeFileSync(filename, replaced, "utf8");
+  await fs.promises.writeFile(filename, replaced, "utf8");
 }
 
-function setProjectName(templateName, projectName) {
-  replaceLineInFile("package.json", `"name": "${templateName}"`, `"name": "${projectName}"`);
-  replaceLineInFile("bsconfig.json", `"name": "${templateName}"`, `"name": "${projectName}"`);
-}
-
-function installPackages() {
-  console.log("Installing packages. This might take a couple of seconds...");
-
-  execSync("npm install");
-  console.log(`Packages installed.`);
-}
-
-function initGitRepo() {
-  execSync("git init");
-  console.log(`Initialized a git repository.`);
-}
-
-function logSuccess(projectName, projectPath) {
-  console.log(`\n${c.green("✔ Success!")} Created ${projectName} at ${c.green(projectPath)}.`);
-
-  console.log("\nNext steps:");
-  console.log(`• ${c.bold("cd " + projectName)}`);
-  console.log(`• ${c.bold("npm run res:dev")} to start the ReScript compiler in watch mode.`);
-  console.log(`• See ${c.bold("README.md")} for more information.`);
-  console.log(`\n${c.bold("Happy hacking!")}`);
+async function setProjectName(templateName, projectName) {
+  await replaceLineInFile("package.json", `"name": "${templateName}"`, `"name": "${projectName}"`);
+  await replaceLineInFile("bsconfig.json", `"name": "${templateName}"`, `"name": "${projectName}"`);
 }
 
 async function main() {
-  console.log(c.cyan(`Welcome to ${c.red("create-rescript-app")}!`));
-  console.log("This tool will help you set up your new ReScript project quickly.\n");
+  console.clear();
 
-  const { projectName, templateName } = await getParams();
+  p.intro(`${c.bgCyan(c.black(" create-rescript-app "))}`);
 
-  console.log(); // newline
+  const projectName = await p.text({
+    message: "What is the name of your new ReScript project?",
+    placeholder: process.argv[2] || "my-rescript-app",
+    validate: validateProjectName,
+  });
+  checkCancel(projectName);
+
+  const templateName = await p.select({
+    message: "Select a template",
+    options: templates,
+  });
+  checkCancel(templateName);
+
+  const shouldContinue = await p.confirm({
+    message: `Your new ReScript project ${c.cyan(projectName)} will now be created. Continue?`,
+  });
+  checkCancel(shouldContinue);
+
+  if (!shouldContinue) {
+    p.outro("No project created.");
+    process.exit(0);
+  }
 
   const templatePath = path.join(__dirname, "templates", templateName);
   const projectPath = path.join(process.cwd(), projectName);
 
-  if (fs.existsSync(projectPath)) {
-    console.log(`The folder ${c.red(projectName)} already exist in the current directory.`);
-    console.log("Please try again with another name.");
-    process.exit(1);
-  }
-
-  console.log(
-    "Creating a new ReScript project",
-    `in ${c.green(projectPath)} with template ${c.cyan(templateName)}.`
-  );
+  const s = p.spinner();
+  s.start("Creating project...");
 
   try {
-    fs.cpSync(templatePath, projectPath, { recursive: true });
+    await fs.promises.cp(templatePath, projectPath, { recursive: true });
     process.chdir(projectPath);
 
-    setProjectName(templateName, projectName);
-    installPackages();
-    initGitRepo();
-    logSuccess(projectName, projectPath);
+    await setProjectName(templateName, projectName);
+    await promisify(exec)("npm install");
+    await promisify(exec)("git init");
+    s.stop("Project created.");
+
+    p.note(`cd ${projectName}\nnpm run res:dev`, "Next steps");
+    p.outro(`Happy hacking! See ${c.cyan("README.md")} for more information.`);
   } catch (error) {
-    console.log(error);
+    s.stop("Installation error.");
+
+    p.outro(`Project creation failed.`);
+
+    p.log.error(error);
   }
 }
 

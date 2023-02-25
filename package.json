@@ -17,8 +17,7 @@
     "templates"
   ],
   "dependencies": {
-    "ansi-colors": "^4.1.3",
-    "enquirer": "^2.3.6"
+    "@clack/prompts": "^0.6.0"
   },
   "repository": {
     "type": "git",
