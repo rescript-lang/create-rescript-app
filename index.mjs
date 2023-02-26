@@ -65,10 +65,17 @@ async function setProjectName(templateName, projectName) {
   await replaceLineInFile("bsconfig.json", `"name": "${templateName}"`, `"name": "${projectName}"`);
 }
 
+function getVersion() {
+  const packageJsonPath = path.join(__dirname, "package.json");
+  const contents = fs.readFileSync(packageJsonPath, "utf8");
+  return JSON.parse(contents).version;
+}
+
 async function main() {
   console.clear();
 
-  p.intro(`${c.bgCyan(c.black(" create-rescript-app "))}`);
+  const version = getVersion();
+  p.intro(`${c.bgCyan(c.black(` create-rescript-app `))} ${c.dim(version)}`);
 
   const projectName = await p.text({
     message: "What is the name of your new ReScript project?",
