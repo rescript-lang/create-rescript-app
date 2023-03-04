@@ -13,8 +13,7 @@
     }
   ],
   "suffix": ".bs.mjs",
-  "bs-dependencies": ["@rescript/core", "@rescript/react"],
-  "bsc-flags": ["-open RescriptCore"],
+  "bs-dependencies": ["@rescript/react"],
   "jsx": {
     "version": 4,
     "mode": "automatic"

@@ -2,7 +2,7 @@
 
 This is a Vite-based template with following setup:
 
-- [ReScript](https://rescript-lang.org) 10.1 with JSX 4 automatic mode and the new [`@rescript/core`](https://github.com/rescript-association/rescript-core) standard library
+- [ReScript](https://rescript-lang.org) 10.1 with @rescript/react and JSX 4 automatic mode
 - ES6 modules (ReScript code compiled to `.bs.mjs` files)
 - Vite 4 with React Plugin (Fast Refresh)
 - Tailwind 3

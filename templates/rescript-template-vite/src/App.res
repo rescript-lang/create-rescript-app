@@ -9,7 +9,7 @@ let make = () => {
     </p>
     <h2 className="text-2xl font-semibold mt-5"> {React.string("Fast Refresh Test")} </h2>
     <Button onClick={_ => setCount(count => count + 1)}>
-      {React.string(`count is ${count->Int.toString}`)}
+      {React.string(`count is ${count->string_of_int}`)}
     </Button>
     <p>
       {React.string("Edit ")}
