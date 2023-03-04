@@ -8,6 +8,8 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import c from "picocolors";
 
+const rescriptVersion = "10.1";
+
 // Get __dirname in an ES6 module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,19 +18,20 @@ const templates = [
   {
     value: "rescript-template-vite",
     label: "Vite",
-    hint: "ReScript 10.1, JSX4, Vite, Tailwind CSS",
+    hint: "React, JSX4 and Tailwind CSS",
   },
   {
     value: "rescript-template-basic",
     label: "Basic",
-    hint: "ReScript 10.1, command line hello world app",
+    hint: "Command line hello world app",
   },
-  {
-    value: "rescript-template-nextjs",
-    label: "Next.js",
-    hint: "ReScript 9.1, Next.js, Tailwind CSS",
-    incompatibleWithCore: true,
-  },
+  // Needs to be upgraded to current ReScript + Next.js
+  // {
+  //   value: "rescript-template-nextjs",
+  //   label: "Next.js",
+  //   hint: "Next.js, Tailwind CSS",
+  //   incompatibleWithCore: true,
+  // },
 ];
 
 function checkCancel(value) {
@@ -91,8 +94,8 @@ function getVersion() {
 async function main() {
   console.clear();
 
-  const version = getVersion();
-  p.intro(`${c.bgCyan(c.black(` create-rescript-app `))} ${c.dim(version)}`);
+  const versionString = `for ReScript ${rescriptVersion} ${c.dim("(" + getVersion() + ")")}`;
+  p.intro(`${c.bgCyan(c.black(` create-rescript-app `))} ${versionString}`);
 
   const projectName = await p.text({
     message: "What is the name of your new ReScript project?",
@@ -129,12 +132,12 @@ async function main() {
     await updatePackageJson(projectName);
     await updateBsconfigJson(projectName, withCore);
 
+    const packages = [`rescript@${rescriptVersion}`];
     if (withCore) {
-      await promisify(exec)("npm add @rescript/core");
-    } else {
-      await promisify(exec)("npm install");
+      packages.push("@rescript/core");
     }
 
+    await promisify(exec)("npm add " + packages.join(" "));
     await promisify(exec)("git init");
     s.stop("Project created.");
 
