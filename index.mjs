@@ -6,6 +6,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { glob } from "glob";
 import c from "picocolors";
 
 const rescriptVersion = "10.1";
@@ -85,6 +86,15 @@ async function updateBsconfigJson(projectName, withCore) {
   });
 }
 
+async function coreify() {
+  const resFiles = await glob("src/**/*.res");
+  for (const resFile of resFiles) {
+    await updateFile(resFile, contents =>
+      contents.replace("Js.log", "Console.log").replace("string_of_int", "Int.toString")
+    );
+  }
+}
+
 function getVersion() {
   const packageJsonPath = path.join(__dirname, "package.json");
   const contents = fs.readFileSync(packageJsonPath, "utf8");
@@ -131,6 +141,7 @@ async function main() {
 
     await updatePackageJson(projectName);
     await updateBsconfigJson(projectName, withCore);
+    await coreify();
 
     const packages = [`rescript@${rescriptVersion}`];
     if (withCore) {

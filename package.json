@@ -17,7 +17,8 @@
     "templates"
   ],
   "dependencies": {
-    "@clack/prompts": "^0.6.0"
+    "@clack/prompts": "^0.6.0",
+    "glob": "^9.2.1"
   },
   "repository": {
     "type": "git",
