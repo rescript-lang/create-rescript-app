@@ -125,7 +125,7 @@ async function main() {
   const withCore =
     !incompatibleWithCore &&
     (await p.confirm({
-      message: "Add the new @rescript/core standard libary?",
+      message: "Add the new @rescript/core standard library?",
     }));
   checkCancel(withCore);
 
