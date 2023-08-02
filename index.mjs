@@ -95,6 +95,10 @@ async function coreify() {
   }
 }
 
+async function renameGitignore() {
+  await fs.promises.rename("_gitignore", ".gitignore");
+}
+
 function getVersion() {
   const packageJsonPath = path.join(__dirname, "package.json");
   const contents = fs.readFileSync(packageJsonPath, "utf8");
@@ -139,6 +143,7 @@ async function main() {
     await fs.promises.cp(templatePath, projectPath, { recursive: true });
     process.chdir(projectPath);
 
+    await renameGitignore();
     await updatePackageJson(projectName);
     await updateBsconfigJson(projectName, withCore);
     await coreify();
