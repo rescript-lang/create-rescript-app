@@ -25,7 +25,7 @@ function App(props) {
                       className: "text-2xl font-semibold mt-5"
                     }),
                 JsxRuntime.jsx(Button.make, {
-                      children: Caml_option.some("count is " + match[0].toString() + ""),
+                      children: Caml_option.some("count is " + String(match[0]) + ""),
                       onClick: (function (param) {
                           Curry._1(setCount, (function (count) {
                                   return count + 1 | 0;
