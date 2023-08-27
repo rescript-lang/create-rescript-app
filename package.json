@@ -17,8 +17,8 @@
     "templates"
   ],
   "dependencies": {
-    "@clack/prompts": "^0.6.0",
-    "glob": "^9.2.1"
+    "@clack/prompts": "^0.7.0",
+    "glob": "^10.3.3"
   },
   "repository": {
     "type": "git",
@@ -38,6 +38,6 @@
     "create-rescript-app": "index.mjs"
   },
   "devDependencies": {
-    "prettier": "^2.7.1"
+    "prettier": "^3.0.2"
   }
 }
