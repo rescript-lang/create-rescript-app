@@ -3,3 +3,6 @@
 **/*.res.js
 **/*.res.mjs
 .prettierrc.json
+
+# Unused/WIP templates
+templates/rescript-template-vite/
