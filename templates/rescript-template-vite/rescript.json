@@ -12,8 +12,9 @@
       "in-source": true
     }
   ],
-  "suffix": ".bs.mjs",
-  "bs-dependencies": ["@rescript/react"],
+  "suffix": ".res.mjs",
+  "bs-dependencies": ["@rescript/core", "@rescript/react"],
+  "bsc-flags": ["-open RescriptCore"],
   "jsx": {
     "version": 4,
     "mode": "automatic"
