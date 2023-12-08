@@ -1,4 +1,5 @@
 **/node_modules/
 **/lib/
+**/*.res.js
 **/*.res.mjs
 .prettierrc.json
