@@ -12,10 +12,6 @@
   "engines": {
     "node": ">=12"
   },
-  "files": [
-    "index.mjs",
-    "templates"
-  ],
   "dependencies": {
     "@clack/prompts": "^0.7.0",
     "glob": "^10.3.3"
