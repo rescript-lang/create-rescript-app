@@ -1,4 +1,4 @@
-import IndexRes from "src/Index.mjs";
+import IndexRes from "src/Index.res.mjs";
 
 // Note:
 // We need to wrap the make call with

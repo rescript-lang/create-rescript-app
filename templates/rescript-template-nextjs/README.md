@@ -58,16 +58,16 @@ This template is complying to the ES6 module format, and therefore compiles ReSc
     "module": "commonjs",
     "in-source": true
   },
-  "suffix": ".bs.js"
+  "suffix": ".res.js"
 }
 ```
 
-2. Replace all import paths in `pages` that refer to `src/MyResFile.mjs` to `src/MyResFile.bs.js`
+2. Replace all import paths in `pages` that refer to `src/MyResFile.res.mjs` to `src/MyResFile.res.js`
 
 ```diff
 // pages/_app.js
-+import ResApp from "src/App.mjs"
-+import ResApp from "src/App.bs.js"
+-import ResApp from "src/App.res.mjs"
++import ResApp from "src/App.res.js"
 ```
 
 Done. You are now running on commonjs modules.
@@ -92,13 +92,13 @@ ReScript supports filenames with special characters: e.g. `pages/blog/[slug].res
 
 ## Q & A
 
-### Why are the generated `.mjs` files tracked in git?
+### Why are the generated `.res.mjs` files tracked in git?
 
 In ReScript, it's a good habit to keep track of the actual JS output the compiler emits. It allows quick sanity checking if we made any changes that actually have an impact on the resulting JS code (especially when doing major compiler upgrades, it's a good way to verify if production code will behave the same way as before the upgrade).
 
 This will also make it easier for your Non-ReScript coworkers to read and understand the changes in Github PRs, and call you out when you are writing inefficient code.
 
-If you want to opt-out, feel free to remove all compiled `.mjs` files within the `src` directory and add `src/**/*.mjs` in your `.gitignore`.
+If you want to opt-out, feel free to remove all compiled `.res.mjs` files within the `src` directory and add `src/**/*.res.mjs` in your `.gitignore`.
 
 ### How trustworthy is this template?
 
