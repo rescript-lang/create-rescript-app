@@ -9,8 +9,6 @@ import { promisify } from "util";
 import { glob } from "glob";
 import c from "picocolors";
 
-const rescriptVersion = "10.1";
-
 // Get __dirname in an ES6 module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +29,6 @@ const templates = [
   //   value: "rescript-template-nextjs",
   //   label: "Next.js",
   //   hint: "Next.js, Tailwind CSS",
-  //   incompatibleWithCore: true,
   // },
 ];
 
@@ -71,28 +68,12 @@ async function updatePackageJson(projectName) {
   );
 }
 
-async function updateBsconfigJson(projectName, withCore) {
-  await updateFile("bsconfig.json", contents => {
+async function updateRescriptJson(projectName, withCore) {
+  await updateFile("rescript.json", contents => {
     const config = JSON.parse(contents);
-
     config["name"] = projectName;
-
-    if (withCore) {
-      config["bs-dependencies"] = [...(config["bs-dependencies"] || []), "@rescript/core"];
-      config["bsc-flags"] = [...(config["bsc-flags"] || []), "-open RescriptCore"];
-    }
-
     return JSON.stringify(config, null, 2);
   });
-}
-
-async function coreify() {
-  const resFiles = await glob("src/**/*.res");
-  for (const resFile of resFiles) {
-    await updateFile(resFile, contents =>
-      contents.replace("Js.log", "Console.log").replace("string_of_int", "Int.toString")
-    );
-  }
 }
 
 async function renameGitignore() {
@@ -108,8 +89,10 @@ function getVersion() {
 async function main() {
   console.clear();
 
-  const versionString = `for ReScript ${rescriptVersion} ${c.dim("(" + getVersion() + ")")}`;
-  p.intro(`${c.bgCyan(c.black(` create-rescript-app `))} ${versionString}`);
+  p.intro(`${c.bgCyan(c.black(` create-rescript-app `))} ${c.dim("(" + getVersion() + ")")}`);
+  p.note(
+    'Create a new ReScript 11 project with modern defaults\n("Core" standard library, JSX 4 automatic mode)'
+  );
 
   const projectName = await p.text({
     message: "What is the name of your new ReScript project?",
@@ -124,14 +107,17 @@ async function main() {
   });
   checkCancel(templateName);
 
-  const incompatibleWithCore = templates.find(t => t.value === templateName).incompatibleWithCore;
+  const rescriptVersion = await p.text({
+    message: "ReScript version? (keep the default if unsure)",
+    initialValue: "11.0.0-rc.7",
+  });
+  checkCancel(rescriptVersion);
 
-  const withCore =
-    !incompatibleWithCore &&
-    (await p.confirm({
-      message: "Add the new @rescript/core standard library?",
-    }));
-  checkCancel(withCore);
+  const rescriptCoreVersion = await p.text({
+    message: "ReScript Core version? (keep the default if unsure)",
+    initialValue: "0.6.0",
+  });
+  checkCancel(rescriptCoreVersion);
 
   const templatePath = path.join(__dirname, "templates", templateName);
   const projectPath = path.join(process.cwd(), projectName);
@@ -145,22 +131,23 @@ async function main() {
 
     await renameGitignore();
     await updatePackageJson(projectName);
-    await updateBsconfigJson(projectName, withCore);
-    await coreify();
+    await updateRescriptJson(projectName);
 
-    const packages = [`rescript@${rescriptVersion}`];
-    if (withCore) {
-      packages.push("@rescript/core");
-    }
+    const packages = [`rescript@${rescriptVersion}`, `@rescript/core@${rescriptCoreVersion}`];
 
     await promisify(exec)("npm add " + packages.join(" "));
     await promisify(exec)("git init");
     s.stop("Project created.");
 
-    p.note(`cd ${projectName}\nnpm run res:dev`, "Next steps");
-    p.outro(`Happy hacking! See ${c.cyan("README.md")} for more information.`);
+    p.note(
+      `Your project ${c.cyan(projectName)} was created successfully.\nChange to the ${c.cyan(
+        projectName
+      )} folder and view ${c.cyan("README.md")} for more information.`,
+      "Next steps"
+    );
+    p.outro(`Happy hacking!`);
   } catch (error) {
-    s.stop("Installation error.");
+    s.stop(`Installation error: ${error}`);
 
     p.outro(`Project creation failed.`);
 

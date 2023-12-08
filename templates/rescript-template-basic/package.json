@@ -12,6 +12,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "rescript": "^10.1.2"
+    "@rescript/core": "^0.6.0",
+    "rescript": "^11.0.0-rc.7"
   }
 }
