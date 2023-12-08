@@ -6,7 +6,6 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { glob } from "glob";
 import c from "picocolors";
 
 // Get __dirname in an ES6 module
