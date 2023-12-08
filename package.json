@@ -13,8 +13,7 @@
     "node": ">=12"
   },
   "dependencies": {
-    "@clack/prompts": "^0.7.0",
-    "glob": "^10.3.3"
+    "@clack/prompts": "^0.7.0"
   },
   "repository": {
     "type": "git",
