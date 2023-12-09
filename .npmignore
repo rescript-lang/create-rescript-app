@@ -5,4 +5,4 @@
 .prettierrc.json
 
 # Unused/WIP templates
-templates/rescript-template-vite/
+templates/rescript-template-nextjs/
