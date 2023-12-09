@@ -98,10 +98,13 @@ function getVersion() {
 async function main() {
   console.clear();
 
-  p.intro(`${c.bgCyan(c.black(` create-rescript-app `))} ${c.dim("(" + getVersion() + ")")}`);
+  p.intro(c.dim("create-rescript-app " + getVersion()));
+
   p.note(
-    'Create a new ReScript 11 project with modern defaults\n("Core" standard library, JSX 4 automatic mode)',
-    "About"
+    `${c.cyan("Fast, Simple, Fully Typed JavaScript from the Future")}
+https://www.rescript-lang.org\n\nCreate a new ReScript 11 project with modern defaults
+("Core" standard library, JSX 4 automatic mode)`,
+    "Welcome to ReScript!"
   );
 
   const projectName = await p.text({
@@ -158,9 +161,8 @@ async function main() {
     s.stop("Project created.");
 
     p.note(
-      `Your project ${c.cyan(projectName)} was created successfully.\nChange to the ${c.cyan(
-        projectName
-      )} folder and view ${c.cyan("README.md")} for more information.`,
+      `Your ReScript project ${c.cyan(projectName)} was created successfully.
+Change to the ${c.cyan(projectName)} folder and view ${c.cyan("README.md")} for more information.`,
       "Next steps"
     );
     p.outro(`Happy hacking!`);
