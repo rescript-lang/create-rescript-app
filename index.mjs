@@ -4,6 +4,7 @@
 import * as p from "@clack/prompts";
 import path from "path";
 import fs from "fs";
+import os from "os";
 import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -78,10 +79,15 @@ async function updatePackageJson(projectName) {
   );
 }
 
-async function updateRescriptJson(projectName) {
+async function updateRescriptJson(projectName, sourceDir) {
   await updateFile("rescript.json", contents => {
     const config = JSON.parse(contents);
     config["name"] = projectName;
+
+    if (sourceDir) {
+      config["sources"]["dir"] = sourceDir;
+    }
+
     return JSON.stringify(config, null, 2);
   });
 }
@@ -96,18 +102,94 @@ function getVersion() {
   return JSON.parse(contents).version;
 }
 
-async function main() {
-  console.clear();
+function getProjectPackageJson() {
+  const packageJsonPath = path.join(process.cwd(), "package.json");
+  const contents = fs.readFileSync(packageJsonPath, "utf8");
+  return JSON.parse(contents);
+}
 
-  p.intro(c.dim("create-rescript-app " + getVersion()));
+async function addToExistingProject() {
+  const projectName = getProjectPackageJson().name;
 
-  p.note(
-    `${c.cyan("Fast, Simple, Fully Typed JavaScript from the Future")}
-https://www.rescript-lang.org\n\nCreate a new ReScript 11 project with modern defaults
-("Core" standard library, JSX 4 automatic mode)`,
-    "Welcome to ReScript!"
-  );
+  const templatePath = path.join(__dirname, "templates", "rescript-template-basic");
+  const projectPath = process.cwd();
+  const gitignorePath = path.join(projectPath, ".gitignore");
 
+  const s = p.spinner();
+
+  try {
+    const addToProj = await p.confirm({
+      message: `Detected a package.json file. Do you want to add ReScript to "${projectName}"?`,
+    });
+    checkCancel(addToProj);
+
+    s.start("Loading available versions...");
+    const [rescriptVersions, rescriptCoreVersions] = await Promise.all([
+      getPackageVersions("rescript", rescriptVersionRange),
+      getPackageVersions("@rescript/core", rescriptCoreVersionRange),
+    ]);
+    s.stop("Versions loaded.");
+
+    const rescriptVersion = await p.select({
+      message: "ReScript version?",
+      options: rescriptVersions.map(v => ({ value: v })),
+    });
+    checkCancel(rescriptVersion);
+
+    const rescriptCoreVersion = await p.select({
+      message: "ReScript Core version?",
+      options: rescriptCoreVersions.map(v => ({ value: v })),
+    });
+    checkCancel(rescriptCoreVersion);
+
+    const sourceDir = await p.text({
+      message: "Where will you put your ReScript source files?",
+      defaultValue: "src",
+      placeholder: "src",
+      initialValue: "src",
+    });
+    checkCancel(sourceDir);
+
+    await fs.promises.copyFile(
+      path.join(templatePath, "rescript.json"),
+      path.join(projectPath, "rescript.json")
+    );
+
+    if (fs.existsSync(gitignorePath)) {
+      await fs.promises.appendFile(gitignorePath, "/lib/" + os.EOL + ".bsb.lock" + os.EOL);
+    }
+
+    await updateRescriptJson(projectName, sourceDir);
+
+    const sourceDirPath = path.join(projectPath, sourceDir);
+
+    if (!fs.existsSync(sourceDirPath)) {
+      fs.mkdirSync(sourceDirPath);
+    }
+
+    await fs.promises.copyFile(
+      path.join(templatePath, "src", "Demo.res"),
+      path.join(sourceDirPath, "Demo.res")
+    );
+
+    const packages = [`rescript@${rescriptVersion}`, `@rescript/core@${rescriptCoreVersion}`];
+
+    await promisify(exec)("npm add " + packages.join(" "));
+
+    s.stop("Added ReScript to your project.");
+    p.note(`cd ${projectName}\nnpm run res:dev`, "Next steps");
+    p.outro(`Happy hacking!`);
+  } catch (error) {
+    console.warn(error);
+    s.stop("Installation error.");
+
+    p.outro(`Adding ReScript to project failed.`);
+
+    p.log.error(error);
+  }
+}
+
+async function createNewProject() {
   const projectName = await p.text({
     message: "What is the name of your new ReScript project?",
     placeholder: process.argv[2] || "my-rescript-app",
@@ -173,6 +255,27 @@ Change to the ${c.cyan(projectName)} folder and view ${c.cyan("README.md")} for 
     p.outro(`Project creation failed.`);
 
     p.log.error(error);
+  }
+}
+
+async function main() {
+  console.clear();
+
+  p.intro(c.dim("create-rescript-app " + getVersion()));
+
+  p.note(
+    `${c.cyan("Fast, Simple, Fully Typed JavaScript from the Future")}
+https://www.rescript-lang.org\n\nCreate a new ReScript 11 project with modern defaults
+("Core" standard library, JSX 4 automatic mode)`,
+    "Welcome to ReScript!"
+  );
+
+  const existingPackageJson = fs.existsSync(path.join(process.cwd(), "package.json"));
+
+  if (existingPackageJson) {
+    addToExistingProject();
+  } else {
+    createNewProject();
   }
 }
 
