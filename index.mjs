@@ -67,7 +67,7 @@ async function updatePackageJson(projectName) {
   );
 }
 
-async function updateRescriptJson(projectName, withCore) {
+async function updateRescriptJson(projectName) {
   await updateFile("rescript.json", contents => {
     const config = JSON.parse(contents);
     config["name"] = projectName;
@@ -90,7 +90,8 @@ async function main() {
 
   p.intro(`${c.bgCyan(c.black(` create-rescript-app `))} ${c.dim("(" + getVersion() + ")")}`);
   p.note(
-    'Create a new ReScript 11 project with modern defaults\n("Core" standard library, JSX 4 automatic mode)'
+    'Create a new ReScript 11 project with modern defaults\n("Core" standard library, JSX 4 automatic mode)',
+    "About"
   );
 
   const projectName = await p.text({
