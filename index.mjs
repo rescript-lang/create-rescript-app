@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 
 import * as p from "@clack/prompts";
 import path from "path";
@@ -120,9 +121,9 @@ https://www.rescript-lang.org\n\nCreate a new ReScript 11 project with modern de
   });
   checkCancel(templateName);
 
-  try {
-    const s = p.spinner();
+  const s = p.spinner();
 
+  try {
     s.start("Loading available versions...");
     const [rescriptVersions, rescriptCoreVersions] = await Promise.all([
       getPackageVersions("rescript", rescriptVersionRange),
