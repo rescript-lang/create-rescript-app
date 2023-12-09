@@ -6,7 +6,11 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { satisfies } from "compare-versions";
 import c from "picocolors";
+
+const rescriptVersionRange = "~11 >=11.0.0-rc.6";
+const rescriptCoreVersionRange = ">=0.5.0";
 
 // Get __dirname in an ES6 module
 const __filename = fileURLToPath(import.meta.url);
@@ -30,6 +34,12 @@ const templates = [
   //   hint: "Next.js, Tailwind CSS",
   // },
 ];
+
+async function getPackageVersions(packageName, range) {
+  const { stdout } = await promisify(exec)(`npm view ${packageName} versions --json`);
+  const versions = JSON.parse(stdout);
+  return versions.filter(v => satisfies(v, range)).reverse();
+}
 
 function checkCancel(value) {
   if (p.isCancel(value)) {
@@ -107,25 +117,33 @@ async function main() {
   });
   checkCancel(templateName);
 
-  const rescriptVersion = await p.text({
-    message: "ReScript version? (keep the default if unsure)",
-    initialValue: "11.0.0-rc.7",
-  });
-  checkCancel(rescriptVersion);
-
-  const rescriptCoreVersion = await p.text({
-    message: "ReScript Core version? (keep the default if unsure)",
-    initialValue: "0.6.0",
-  });
-  checkCancel(rescriptCoreVersion);
-
-  const templatePath = path.join(__dirname, "templates", templateName);
-  const projectPath = path.join(process.cwd(), projectName);
-
-  const s = p.spinner();
-  s.start("Creating project...");
-
   try {
+    const s = p.spinner();
+
+    s.start("Loading available versions...");
+    const [rescriptVersions, rescriptCoreVersions] = await Promise.all([
+      getPackageVersions("rescript", rescriptVersionRange),
+      getPackageVersions("@rescript/core", rescriptCoreVersionRange),
+    ]);
+    s.stop("Versions loaded.");
+
+    const rescriptVersion = await p.select({
+      message: "ReScript version?",
+      options: rescriptVersions.map(v => ({ value: v })),
+    });
+    checkCancel(rescriptVersion);
+
+    const rescriptCoreVersion = await p.select({
+      message: "ReScript Core version?",
+      options: rescriptCoreVersions.map(v => ({ value: v })),
+    });
+    checkCancel(rescriptCoreVersion);
+
+    const templatePath = path.join(__dirname, "templates", templateName);
+    const projectPath = path.join(process.cwd(), projectName);
+
+    s.start("Creating project...");
+
     await fs.promises.cp(templatePath, projectPath, { recursive: true });
     process.chdir(projectPath);
 
