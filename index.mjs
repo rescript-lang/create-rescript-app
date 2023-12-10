@@ -78,6 +78,14 @@ async function updatePackageJson(projectName) {
   );
 }
 
+async function updateExistingPackageJson() {
+  await updateFile("package.json", contents => {
+    let config = JSON.parse(contents);
+    config["scripts"] = { ...(config["scripts"] || {}), "res:dev": "rescript build -w" };
+    return JSON.stringify(config, null, 2);
+  });
+}
+
 async function updateRescriptJson(projectName, sourceDir) {
   await updateFile("rescript.json", contents => {
     const config = JSON.parse(contents);
@@ -107,9 +115,10 @@ function getProjectPackageJson() {
   return JSON.parse(contents);
 }
 
-async function addToExistingProject() {
-  const projectName = getProjectPackageJson().name;
-
+/**
+ * @param {string} projectName
+ */
+async function addToExistingProject(projectName) {
   const templatePath = path.join(__dirname, "templates", "rescript-template-basic");
   const projectPath = process.cwd();
   const gitignorePath = path.join(projectPath, ".gitignore");
@@ -117,11 +126,6 @@ async function addToExistingProject() {
   const s = p.spinner();
 
   try {
-    const addToProj = await p.confirm({
-      message: `Detected a package.json file. Do you want to add ReScript to "${projectName}"?`,
-    });
-    checkCancel(addToProj);
-
     s.start("Loading available versions...");
     const [rescriptVersions, rescriptCoreVersions] = await Promise.all([
       getPackageVersions("rescript", rescriptVersionRange),
@@ -149,21 +153,24 @@ async function addToExistingProject() {
     });
     checkCancel(sourceDir);
 
+    s.start("Adding ReScript to your project...");
+
     await fs.promises.copyFile(
       path.join(templatePath, "rescript.json"),
       path.join(projectPath, "rescript.json")
     );
 
     if (fs.existsSync(gitignorePath)) {
-      await fs.promises.appendFile(gitignorePath, "/lib/" + os.EOL + ".bsb.lock" + os.EOL);
+      await fs.promises.appendFile(gitignorePath, os.EOL + "/lib/" + os.EOL + ".bsb.lock" + os.EOL);
     }
 
+    await updateExistingPackageJson();
     await updateRescriptJson(projectName, sourceDir);
 
     const sourceDirPath = path.join(projectPath, sourceDir);
 
     if (!fs.existsSync(sourceDirPath)) {
-      fs.mkdirSync(sourceDirPath);
+      await fs.promises.mkdir(sourceDirPath);
     }
 
     await fs.promises.copyFile(
@@ -176,7 +183,7 @@ async function addToExistingProject() {
     await promisify(exec)("npm add " + packages.join(" "));
 
     s.stop("Added ReScript to your project.");
-    p.note(`cd ${projectName}\nnpm run res:dev`, "Next steps");
+    p.note(`npm run res:dev`, "Next steps");
     p.outro(`Happy hacking!`);
   } catch (error) {
     console.warn(error);
@@ -269,10 +276,21 @@ https://www.rescript-lang.org\n\nCreate a new ReScript 11 project with modern de
     "Welcome to ReScript!"
   );
 
-  const existingPackageJson = fs.existsSync(path.join(process.cwd(), "package.json"));
+  const existingProjectDetected = fs.existsSync(path.join(process.cwd(), "package.json"));
 
-  if (existingPackageJson) {
-    addToExistingProject();
+  if (existingProjectDetected) {
+    const projectName = getProjectPackageJson().name;
+
+    const addToExistingProjectConfirmed = await p.confirm({
+      message: `Detected a package.json file. Do you want to add ReScript to "${projectName}"?`,
+    });
+    checkCancel(addToExistingProjectConfirmed);
+
+    if (addToExistingProjectConfirmed) {
+      addToExistingProject(projectName);
+    } else {
+      createNewProject();
+    }
   } else {
     createNewProject();
   }
