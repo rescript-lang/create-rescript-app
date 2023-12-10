@@ -1,0 +1,29 @@
+{
+  "name": "rescript-template-nextjs",
+  "namespace": false,
+  "jsx": {
+    "version": 4
+  },
+  "bs-dependencies": [
+    "@rescript/react",
+    "@rescript/core"
+  ],
+  "bsc-flags": [
+    "-open RescriptCore"
+  ],
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    }
+  ],
+  "package-specs": {
+    "module": "es6",
+    "in-source": true
+  },
+  "suffix": ".res.mjs",
+  "gentypeconfig": {
+    "language": "untyped",
+    "shims": []
+  }
+}

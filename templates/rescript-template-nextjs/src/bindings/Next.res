@@ -14,15 +14,17 @@ module GetServerSideProps = {
   // See: https://github.com/zeit/next.js/blob/canary/packages/next/types/index.d.ts
   type context<'props, 'params, 'previewData> = {
     params: 'params,
-    query: Js.Dict.t<string>,
+    query: Dict.t<string>,
     preview: option<bool>, // preview is true if the page is in the preview mode and undefined otherwise.
-    previewData: Js.Nullable.t<'previewData>,
+    previewData: Nullable.t<'previewData>,
     req: Req.t,
     res: Res.t,
   }
 
   // The definition of a getServerSideProps function
-  type t<'props, 'params, 'previewData> = context<'props, 'params, 'previewData> => Js.Promise.t<{"props": 'props}>
+  type t<'props, 'params, 'previewData> = context<'props, 'params, 'previewData> => promise<{
+    "props": 'props,
+  }>
 }
 
 module GetStaticProps = {
@@ -30,11 +32,11 @@ module GetStaticProps = {
   type context<'props, 'params, 'previewData> = {
     params: 'params,
     preview: option<bool>, // preview is true if the page is in the preview mode and undefined otherwise.
-    previewData: Js.Nullable.t<'previewData>,
+    previewData: Nullable.t<'previewData>,
   }
 
   // The definition of a getStaticProps function
-  type t<'props, 'params, 'previewData> = context<'props, 'params, 'previewData> => Js.Promise.t<{
+  type t<'props, 'params, 'previewData> = context<'props, 'params, 'previewData> => promise<{
     "props": 'props,
   }>
 }
@@ -50,7 +52,7 @@ module GetStaticPaths = {
   }
 
   // The definition of a getStaticPaths function
-  type t<'params> = unit => Js.Promise.t<return<'params>>
+  type t<'params> = unit => promise<return<'params>>
 }
 
 module Link = {
@@ -59,9 +61,10 @@ module Link = {
     ~href: string,
     ~_as: string=?,
     ~prefetch: bool=?,
-    ~replace: option<bool>=?,
-    ~shallow: option<bool>=?,
-    ~passHref: option<bool>=?,
+    ~replace: bool=?,
+    ~shallow: bool=?,
+    ~passHref: bool=?,
+    ~className: string=?,
     ~children: React.element,
   ) => React.element = "default"
 }
@@ -101,12 +104,12 @@ module Router = {
     asPath: string,
     events: Events.t,
     pathname: string,
-    query: Js.Dict.t<string>,
+    query: Dict.t<string>,
   }
 
   type pathObj = {
     pathname: string,
-    query: Js.Dict.t<string>,
+    query: Dict.t<string>,
   }
 
   @send external push: (router, string) => unit = "push"
@@ -129,16 +132,11 @@ module Error = {
 }
 
 module Dynamic = {
-  @deriving(abstract)
   type options = {
-    @optional
-    ssr: bool,
-    @optional
-    loading: unit => React.element,
+    ssr?: bool,
+    loading?: unit => React.element,
   }
 
   @module("next/dynamic")
-  external dynamic: (unit => Js.Promise.t<'a>, options) => 'a = "default"
-
-  @val external import_: string => Js.Promise.t<'a> = "import"
+  external dynamic: (unit => promise<'a>, options) => 'a = "default"
 }

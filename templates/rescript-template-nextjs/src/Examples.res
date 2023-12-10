@@ -14,5 +14,5 @@ let getServerSideProps = _ctx => {
     msg: "This page was rendered with getServerSideProps. You can find the source code here: ",
     href: "https://github.com/ryyppy/nextjs-default/tree/master/src/Examples.res",
   }
-  Js.Promise.resolve({"props": props})
+  Promise.resolve({"props": props})
 }
