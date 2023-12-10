@@ -13,8 +13,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@clack/prompts": "^0.7.0",
-    "compare-versions": "^6.1.0"
+    "@clack/prompts": "0.7.0",
+    "compare-versions": "6.1.0"
   },
   "repository": {
     "type": "git",
