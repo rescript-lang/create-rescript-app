@@ -22,19 +22,18 @@ const templates = [
   {
     value: "rescript-template-vite",
     label: "Vite",
-    hint: "React, JSX4 and Tailwind CSS",
+    hint: "Vite 5, React and Tailwind CSS",
+  },
+  {
+    value: "rescript-template-nextjs",
+    label: "Next.js",
+    hint: "Next.js 14 and Tailwind CSS",
   },
   {
     value: "rescript-template-basic",
     label: "Basic",
     hint: "Command line hello world app",
   },
-  // Needs to be upgraded to current ReScript + Next.js
-  // {
-  //   value: "rescript-template-nextjs",
-  //   label: "Next.js",
-  //   hint: "Next.js, Tailwind CSS",
-  // },
 ];
 
 async function getPackageVersions(packageName, range) {
