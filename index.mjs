@@ -307,7 +307,7 @@ https://www.rescript-lang.org\n\nCreate a new ReScript 11 project with modern de
     if (addToExistingProjectConfirmed) {
       addToExistingProject(projectName);
     } else {
-      createNewProject();
+      p.outro("No changes were made to your project.");
     }
   } else {
     createNewProject();
