@@ -115,6 +115,22 @@ function getProjectPackageJson() {
   return JSON.parse(contents);
 }
 
+let packageManagers = ["npm", "pnpm", "yarn", "bun"];
+
+function getPackageManager() {
+  const executablePath = process.env.npm_execpath ?? "";
+  let executableBasename = path.basename(executablePath);
+  let manager = "npm";
+
+  packageManagers.forEach(pm => {
+    if (executableBasename?.includes(pm)) {
+      manager = pm;
+    }
+  });
+
+  return manager;
+}
+
 /**
  * @param {string} projectName
  */
@@ -124,6 +140,7 @@ async function addToExistingProject(projectName) {
   const gitignorePath = path.join(projectPath, ".gitignore");
 
   const s = p.spinner();
+  const pm = getPackageManager();
 
   try {
     s.start("Loading available versions...");
@@ -180,10 +197,10 @@ async function addToExistingProject(projectName) {
 
     const packages = [`rescript@${rescriptVersion}`, `@rescript/core@${rescriptCoreVersion}`];
 
-    await promisify(exec)("npm add " + packages.join(" "));
+    await promisify(exec)(`${pm} add ${packages.join(" ")}`);
 
     s.stop("Added ReScript to your project.");
-    p.note(`npm run res:dev`, "Next steps");
+    p.note(`${pm} run res:dev`, "Next steps");
     p.outro(`Happy hacking!`);
   } catch (error) {
     console.warn(error);
@@ -210,6 +227,7 @@ async function createNewProject() {
   checkCancel(templateName);
 
   const s = p.spinner();
+  const pm = getPackageManager();
 
   try {
     s.start("Loading available versions...");
@@ -245,7 +263,7 @@ async function createNewProject() {
 
     const packages = [`rescript@${rescriptVersion}`, `@rescript/core@${rescriptCoreVersion}`];
 
-    await promisify(exec)("npm add " + packages.join(" "));
+    await promisify(exec)(`${pm} add ${packages.join(" ")}`);
     await promisify(exec)("git init");
     s.stop("Project created.");
 
