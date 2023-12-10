@@ -4,9 +4,12 @@
   "author": "Patrick Ecker <ryyppy@users.noreply.github.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "next": "10.2.3",
-    "react": "17.0.1",
-    "react-dom": "17.0.1"
+    "@rescript/core": "^0.6.0",
+    "@rescript/react": "^0.12.0-alpha.3",
+    "next": "^14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "rescript": "^11.0.0-rc.7"
   },
   "repository": "https://github.com/rescript-lang/create-rescript-app",
   "scripts": {
@@ -21,14 +24,9 @@
     "res:dev": "rescript build -w"
   },
   "devDependencies": {
-    "next-transpile-modules": "7.1.2",
-    "@rescript/react": "0.10.3",
-    "gentype": "4.1",
     "autoprefixer": "10.1.0",
-    "rescript": "9.1",
-    "cssnano": "5.0.5",
-    "postcss": "8.2.15",
-    "postcss-cli": "8.3.1",
-    "tailwindcss": "2.0.4"
+    "gentype": "4.1",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6"
   }
 }
