@@ -5,5 +5,4 @@
 .prettierrc.json
 .node-version
 
-# Unused/WIP templates
-templates/rescript-template-nextjs/
+# Add unused/WIP templates here
