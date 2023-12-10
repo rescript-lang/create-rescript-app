@@ -2,10 +2,12 @@
   "name": "create-rescript-app",
   "version": "1.6.0-beta.5",
   "description": "Quickly create new ReScript apps from project templates.",
-  "main": "index.mjs",
+  "main": "src/Main.res.mjs",
   "scripts": {
-    "start": "node index.mjs",
-    "format": "prettier --write index.mjs"
+    "start": "node src/Main.res.mjs",
+    "prepare": "rescript",
+    "format": "rescript format",
+    "dev": "rescript build -w"
   },
   "author": "",
   "license": "ISC",
@@ -14,7 +16,9 @@
   },
   "dependencies": {
     "@clack/prompts": "0.7.0",
-    "compare-versions": "6.1.0"
+    "@rescript/core": "^0.6.0",
+    "@rescript/std": "^11.0.0-rc.7",
+    "compare-versions": "^6.1.0"
   },
   "repository": {
     "type": "git",
@@ -30,10 +34,14 @@
     "rescript app",
     "rescript start"
   ],
+  "files": [
+    "templates",
+    "src/**/*.mjs"
+  ],
   "bin": {
-    "create-rescript-app": "index.mjs"
+    "create-rescript-app": "src/Main.res.mjs"
   },
   "devDependencies": {
-    "prettier": "^3.0.2"
+    "rescript": "^11.0.0-rc.7"
   }
 }

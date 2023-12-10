@@ -2,7 +2,5 @@
 **/lib/
 **/*.res.js
 **/*.res.mjs
-.prettierrc.json
-.node-version
 
 # Add unused/WIP templates here

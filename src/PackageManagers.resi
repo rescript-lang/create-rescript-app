@@ -1,0 +1,1 @@
+let getActivePackageManager: unit => string
