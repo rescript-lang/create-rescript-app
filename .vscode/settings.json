@@ -1,0 +1,11 @@
+{
+  "editor.rulers": [100],
+  "editor.tabSize": 2,
+  "files.exclude": {
+    "**/*.res.mjs": true
+  },
+  "search.exclude": {
+    "**/lib": true
+  },
+  "rescript.settings.askToStartBuild": false
+}
