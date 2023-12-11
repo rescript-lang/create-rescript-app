@@ -11,3 +11,15 @@ or
 ```sh
 yarn create rescript-app
 ```
+
+or
+
+```sh
+pnpm create rescript-app
+```
+
+or
+
+```sh
+bun create rescript-app
+```
