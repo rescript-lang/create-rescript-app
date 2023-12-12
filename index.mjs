@@ -215,7 +215,8 @@ async function addToExistingProject(projectName) {
 async function createNewProject() {
   const projectName = await p.text({
     message: "What is the name of your new ReScript project?",
-    placeholder: process.argv[2] || "my-rescript-app",
+    placeholder: "my-rescript-app",
+    initialValue: process.argv[2],
     validate: validateProjectName,
   });
   checkCancel(projectName);
