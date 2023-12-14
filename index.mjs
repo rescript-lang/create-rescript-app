@@ -179,6 +179,8 @@ async function addToExistingProject(projectName) {
 
     if (fs.existsSync(gitignorePath)) {
       await fs.promises.appendFile(gitignorePath, os.EOL + "/lib/" + os.EOL + ".bsb.lock" + os.EOL);
+    } else {
+      await fs.promises.copyFile(path.join(templatePath, "_gitignore"), gitignorePath);
     }
 
     await updateExistingPackageJson();
