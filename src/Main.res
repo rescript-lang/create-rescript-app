@@ -10,7 +10,6 @@ let getVersion = async () => {
 
 let handleError = async (~outro, perform) =>
   try await perform() catch {
-  | P.Canceled => P.cancel("Canceled.")
   | Exn.Error(error) =>
     switch error->Exn.message {
     | Some(message) => P.Log.error("Error: " ++ message)
@@ -58,4 +57,6 @@ https://www.rescript-lang.org`,
   }
 }
 
-await run()
+try await run() catch {
+| P.Canceled => P.cancel("Canceled.")
+}
