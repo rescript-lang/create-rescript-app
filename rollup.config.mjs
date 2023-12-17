@@ -7,7 +7,7 @@ export default {
   output: {
     file: `out/create-rescript-app.mjs`,
     format: "es",
-    name: "create-rescript-app",
+    banner: "#!/usr/bin/env node",
   },
   plugins: [terser(), nodeResolve({ preferBuiltins: true }), commonjs()],
 };
