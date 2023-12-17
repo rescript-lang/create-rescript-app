@@ -2,10 +2,10 @@
   "name": "create-rescript-app",
   "version": "1.6.0-beta.6",
   "description": "Quickly create new ReScript apps from project templates.",
-  "main": "src/Main.res.mjs",
+  "main": "out/create-rescript-app.mjs",
   "scripts": {
     "start": "node src/Main.res.mjs",
-    "prepare": "rescript",
+    "prepack": "rescript && rollup -c",
     "format": "rescript format",
     "dev": "rescript build -w"
   },
@@ -13,12 +13,6 @@
   "license": "ISC",
   "engines": {
     "node": ">=18"
-  },
-  "dependencies": {
-    "@clack/prompts": "0.7.0",
-    "@rescript/core": "^0.6.0",
-    "@rescript/std": "^11.0.0-rc.7",
-    "compare-versions": "^6.1.0"
   },
   "repository": {
     "type": "git",
@@ -36,12 +30,19 @@
   ],
   "files": [
     "templates",
-    "src/**/*.mjs"
+    "out/create-rescript-app.mjs"
   ],
   "bin": {
-    "create-rescript-app": "src/Main.res.mjs"
+    "create-rescript-app": "out/create-rescript-app.mjs"
   },
   "devDependencies": {
-    "rescript": "^11.0.0-rc.7"
+    "@clack/prompts": "0.7.0",
+    "@rescript/core": "^0.6.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "compare-versions": "^6.1.0",
+    "rescript": "^11.0.0-rc.7",
+    "rollup": "^4.9.1"
   }
 }
