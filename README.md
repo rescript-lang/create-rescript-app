@@ -23,3 +23,7 @@ or
 ```sh
 bun create rescript-app
 ```
+
+## Add to existing project
+
+If you have an existing JavaScript project containing a `package.json`, you can execute one of the above commands directly in your project's directory to add ReScript to your project.
