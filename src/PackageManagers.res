@@ -1,11 +1,21 @@
-@scope(("process", "env"))
-external execpath: option<string> = "npm_execpath"
+open Node
 
-// pnpm must be before npm in this array, as npm is a substring of it
-let packageManagers = ["pnpm", "npm", "yarn", "bun"]
-let defaultPackageManager = "npm"
+@scope(("process", "env"))
+external npm_execpath: option<string> = "npm_execpath"
+
+let compatiblePackageManagers = ["pnpm", "npm", "yarn", "bun"]
+
+let isCompatiblePackageManager = execPath => {
+  let filename = Path.parse(execPath).name
+
+  // Note: exec path may be something like
+  // /usr/local/lib/node_modules/npm/bin/npm-cli.js
+  // So we have to check for substrings here.
+  compatiblePackageManagers->Array.some(pm => filename->String.includes(pm))
+}
 
 let getActivePackageManager = () =>
-  execpath
-  ->Option.flatMap(execpath => packageManagers->Array.find(pm => execpath->String.includes(pm)))
-  ->Option.getOr(defaultPackageManager)
+  switch npm_execpath {
+  | Some(execPath) if isCompatiblePackageManager(execPath) => execPath
+  | _ => "npm"
+  }
