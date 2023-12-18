@@ -38,6 +38,16 @@ module Path = {
   external join: array<string> => string = "join"
 
   @module("node:path") external join2: (string, string) => string = "join"
+
+  type parseResult = {
+    root: string,
+    dir: string,
+    base: string,
+    ext: string,
+    name: string,
+  }
+
+  @module("node:path") external parse: string => parseResult = "parse"
 }
 
 module Process = {
