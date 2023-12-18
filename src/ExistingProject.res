@@ -52,7 +52,7 @@ let moduleSystemOptions = [
   },
   {
     value: "es6",
-    label: "es6",
+    label: "ES6",
     hint: "Use import syntax and .res.mjs extension",
   },
 ]
