@@ -13,23 +13,49 @@ let updatePackageJson = async () =>
         config->Dict.set("scripts", Object(scripts))
         scripts
       }
+      scripts->Dict.set("res:build", String("rescript"))
+      scripts->Dict.set("res:clean", String("rescript clean"))
       scripts->Dict.set("res:dev", String("rescript build -w"))
     | _ => ()
     }
   )
 
-let updateRescriptJson = async (~projectName, ~sourceDir) =>
+let updateRescriptJson = async (~projectName, ~sourceDir, ~moduleSystem, ~suffix) =>
   await JsonUtils.updateJsonFile("rescript.json", json =>
     switch json {
     | Object(config) =>
       config->Dict.set("name", String(projectName))
+      config->Dict.set("suffix", String(suffix))
       switch config->Dict.get("sources") {
       | Some(Object(sources)) => sources->Dict.set("dir", String(sourceDir))
+      | _ => ()
+      }
+      switch config->Dict.get("package-specs") {
+      | Some(Object(sources)) => sources->Dict.set("module", String(moduleSystem))
       | _ => ()
       }
     | _ => ()
     }
   )
+
+let getSuffixForModuleSystem = moduleSystem =>
+  switch moduleSystem {
+  | "es6" => ".res.mjs"
+  | _ => ".res.js"
+  }
+
+let moduleSystemOptions = [
+  {
+    P.value: "commonjs",
+    label: "CommonJS",
+    hint: "Use require syntax and .res.js extension",
+  },
+  {
+    value: "es6",
+    label: "ES6",
+    hint: "Use import syntax and .res.mjs extension",
+  },
+]
 
 let addToExistingProject = async (~projectName) => {
   let versions = await RescriptVersions.promptVersions()
@@ -39,6 +65,17 @@ let addToExistingProject = async (~projectName) => {
     defaultValue: "src",
     placeholder: "src",
     initialValue: "src",
+  })->P.resultOrRaise
+
+  let moduleSystem = await P.select({
+    message: "What module system will you use?",
+    options: moduleSystemOptions,
+  })->P.resultOrRaise
+
+  let suffix = moduleSystem->getSuffixForModuleSystem
+
+  let shouldCheckJsFilesIntoGit = await P.confirm({
+    message: `Do you want to check generated ${suffix} files into git?`,
   })->P.resultOrRaise
 
   let templatePath = CraPaths.getTemplatePath(~templateName=Templates.basicTemplateName)
@@ -62,8 +99,12 @@ let addToExistingProject = async (~projectName) => {
     await Fs.Promises.copyFile(Path.join2(templatePath, "_gitignore"), gitignorePath)
   }
 
+  if !shouldCheckJsFilesIntoGit {
+    await Fs.Promises.appendFile(gitignorePath, `**/*${suffix}${Os.eol}`)
+  }
+
   await updatePackageJson()
-  await updateRescriptJson(~projectName, ~sourceDir)
+  await updateRescriptJson(~projectName, ~sourceDir, ~moduleSystem, ~suffix)
 
   if !Fs.existsSync(sourceDirPath) {
     await Fs.Promises.mkdir(sourceDirPath)

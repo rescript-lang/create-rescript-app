@@ -32,7 +32,12 @@ https://www.rescript-lang.org`,
   )
 
   let packageJsonPath = Path.join2(Process.cwd(), "package.json")
-  if Fs.existsSync(packageJsonPath) {
+  let rescriptJsonPath = Path.join2(Process.cwd(), "rescript.json")
+  let bsconfigJsonPath = Path.join2(Process.cwd(), "bsconfig.json")
+
+  if Fs.existsSync(rescriptJsonPath) || Fs.existsSync(bsconfigJsonPath) {
+    P.outro("ReScript is already installed. No changes were made to your project.")
+  } else if Fs.existsSync(packageJsonPath) {
     let packageJson = await JsonUtils.readJsonFile(packageJsonPath)
     let projectName =
       packageJson->JsonUtils.getStringValue(~fieldName="name")->Option.getOr("unknown")
