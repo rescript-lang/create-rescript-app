@@ -26,4 +26,4 @@ bun create rescript-app
 
 ## Add to existing project
 
-If you have an existing project that contains a `package.json`, you can execute one of the above commands directly in your project's directory and create-rescript-app will apply the basic theme to it instead of creating a new one.
+If you have an existing JavaScript project containing a `package.json`, you can execute one of the above commands directly in your project's directory to add ReScript to your project.
