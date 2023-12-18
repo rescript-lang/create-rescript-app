@@ -13,6 +13,8 @@ let updatePackageJson = async () =>
         config->Dict.set("scripts", Object(scripts))
         scripts
       }
+      scripts->Dict.set("res:build", String("rescript"))
+      scripts->Dict.set("res:clean", String("rescript clean"))
       scripts->Dict.set("res:dev", String("rescript build -w"))
     | _ => ()
     }
