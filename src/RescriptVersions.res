@@ -35,15 +35,23 @@ let promptVersions = async () => {
 
   s->P.Spinner.stop("Versions loaded.")
 
-  let rescriptVersion = await P.select({
-    message: "ReScript version?",
-    options: rescriptVersions->Array.map(v => {P.value: v}),
-  })->P.resultOrRaise
+  let rescriptVersion = switch rescriptVersions {
+  | [version] => version
+  | _ =>
+    await P.select({
+      message: "ReScript version?",
+      options: rescriptVersions->Array.map(v => {P.value: v}),
+    })->P.resultOrRaise
+  }
 
-  let rescriptCoreVersion = await P.select({
-    message: "ReScript Core version?",
-    options: rescriptCoreVersions->Array.map(v => {P.value: v}),
-  })->P.resultOrRaise
+  let rescriptCoreVersion = switch rescriptCoreVersions {
+  | [version] => version
+  | _ =>
+    await P.select({
+      message: "ReScript Core version?",
+      options: rescriptCoreVersions->Array.map(v => {P.value: v}),
+    })->P.resultOrRaise
+  }
 
   {rescriptVersion, rescriptCoreVersion}
 }
