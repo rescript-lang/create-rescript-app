@@ -21,7 +21,7 @@
     "start": "next start -p $PORT",
     "res:build": "rescript",
     "res:clean": "rescript clean",
-    "res:dev": "rescript build -w"
+    "res:dev": "rescript -w"
   },
   "devDependencies": {
     "autoprefixer": "10.1.0",
