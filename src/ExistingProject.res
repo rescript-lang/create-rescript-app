@@ -15,7 +15,7 @@ let updatePackageJson = async () =>
       }
       scripts->Dict.set("res:build", String("rescript"))
       scripts->Dict.set("res:clean", String("rescript clean"))
-      scripts->Dict.set("res:dev", String("rescript build -w"))
+      scripts->Dict.set("res:dev", String("rescript -w"))
     | _ => ()
     }
   )

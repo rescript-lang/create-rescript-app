@@ -7,7 +7,7 @@
     "start": "node src/Main.res.mjs",
     "prepack": "rescript && rollup -c",
     "format": "rescript format",
-    "dev": "rescript build -w"
+    "dev": "rescript -w"
   },
   "author": "",
   "license": "ISC",
