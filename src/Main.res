@@ -28,7 +28,7 @@ let run = async () => {
   P.note(
     ~title="Welcome to ReScript!",
     ~message=`${C.cyan("Fast, Simple, Fully Typed JavaScript from the Future")}
-https://www.rescript-lang.org`,
+https://rescript-lang.org`,
   )
 
   let packageJsonPath = Path.join2(Process.cwd(), "package.json")
@@ -36,7 +36,8 @@ https://www.rescript-lang.org`,
   let bsconfigJsonPath = Path.join2(Process.cwd(), "bsconfig.json")
 
   if Fs.existsSync(rescriptJsonPath) || Fs.existsSync(bsconfigJsonPath) {
-    P.outro("ReScript is already installed. No changes were made to your project.")
+    ExistingRescriptProject.showUpgradeHint()
+    P.outro("No changes were made to your project.")
   } else if Fs.existsSync(packageJsonPath) {
     let packageJson = await JsonUtils.readJsonFile(packageJsonPath)
     let projectName =
@@ -48,7 +49,7 @@ https://www.rescript-lang.org`,
 
     if addToExistingProject {
       await handleError(~outro="Adding to project failed.", async () => {
-        await ExistingProject.addToExistingProject(~projectName)
+        await ExistingJsProject.addToExistingProject(~projectName)
         P.outro("Happy hacking!")
       })
     } else {
