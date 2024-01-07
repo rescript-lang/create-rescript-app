@@ -1,5 +1,7 @@
 # ReScript / Vite Starter Template
 
+- [Instalattion](../../README.md)
+
 This is a Vite-based template with following setup:
 
 - [ReScript](https://rescript-lang.org) 11.0 with @rescript/react and JSX 4 automatic mode

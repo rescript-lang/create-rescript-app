@@ -1,8 +1,10 @@
 # ReScript / NextJS Starter
 
+- [Instalattion](../../README.md)
+
 This is a NextJS based template with following setup:
 
-- Full Tailwind v2 config & basic css scaffold (+ production setup w/ purge-css & cssnano)
+- Full Tailwind v3 config & basic css scaffold (+ production setup w/ purge-css & cssnano)
 - [ReScript](https://rescript-lang.org) + React
 - Some ReScript Bindings for Next to get you started
 - Preconfigured Dependencies: `@rescript/react`
