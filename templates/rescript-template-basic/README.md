@@ -1,5 +1,7 @@
 # ReScript Project Template
 
+- [Installation](../../README.md)
+
 The only official ReScript starter template.
 
 ## Installation
