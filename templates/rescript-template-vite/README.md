@@ -1,6 +1,6 @@
 # ReScript / Vite Starter Template
 
-- [Instalattion](../../README.md)
+- [Installation](../../README.md)
 
 This is a Vite-based template with following setup:
 

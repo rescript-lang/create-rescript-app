@@ -1,6 +1,6 @@
 # ReScript / NextJS Starter
 
-- [Instalattion](../../README.md)
+- [Installation](../../README.md)
 
 This is a NextJS based template with following setup:
 
