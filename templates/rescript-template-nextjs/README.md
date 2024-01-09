@@ -5,7 +5,7 @@
 This is a NextJS based template with following setup:
 
 - Full Tailwind v3 config & basic css scaffold (+ production setup w/ purge-css & cssnano)
-- [ReScript](https://rescript-lang.org) + React
+- [ReScript](https://rescript-lang.org) + [Core](https://github.com/rescript-association/rescript-core) + React
 - Some ReScript Bindings for Next to get you started
 - Preconfigured Dependencies: `@rescript/react`
 
