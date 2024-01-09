@@ -2,7 +2,7 @@
 
 - [Installation](../../README.md)
 
-The only official ReScript starter template.
+Official ReScript starter template.
 
 ## Installation
 
