@@ -4,12 +4,12 @@
   "author": "Patrick Ecker <ryyppy@users.noreply.github.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@rescript/core": "^0.6.0",
-    "@rescript/react": "^0.12.0",
+    "@rescript/core": "^1.2.0",
+    "@rescript/react": "^0.12.1",
     "next": "^14.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "rescript": "^11.0.0"
+    "rescript": "^11.1.0"
   },
   "repository": "https://github.com/rescript-lang/create-rescript-app",
   "scripts": {

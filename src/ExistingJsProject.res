@@ -40,7 +40,7 @@ let updateRescriptJson = async (~projectName, ~sourceDir, ~moduleSystem, ~suffix
 
 let getSuffixForModuleSystem = moduleSystem =>
   switch moduleSystem {
-  | "es6" => ".res.mjs"
+  | "esmodule" => ".res.mjs"
   | _ => ".res.js"
   }
 
@@ -51,8 +51,8 @@ let moduleSystemOptions = [
     hint: "Use require syntax and .res.js extension",
   },
   {
-    value: "es6",
-    label: "ES6",
+    value: "esmodule",
+    label: "ES Modules",
     hint: "Use import syntax and .res.mjs extension",
   },
 ]
