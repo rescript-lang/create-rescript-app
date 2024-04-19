@@ -15,7 +15,7 @@ let updateJsonFile = (filename, updateFn) =>
   updateFile(filename, contents => {
     let json = JSON.parseExn(contents)
     updateFn(json)
-    JSON.stringifyWithIndent(json, 2)
+    JSON.stringify(json, ~space=2)
   })
 
 let getStringValue = (json: JSON.t, ~fieldName) =>

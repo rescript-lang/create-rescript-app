@@ -37,12 +37,12 @@
   },
   "devDependencies": {
     "@clack/prompts": "0.7.0",
-    "@rescript/core": "^0.6.0",
+    "@rescript/core": "^1.2.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "compare-versions": "^6.1.0",
-    "rescript": "^11.0.1",
-    "rollup": "^4.9.1"
+    "rescript": "^11.1.0",
+    "rollup": "^4.14.3"
   }
 }

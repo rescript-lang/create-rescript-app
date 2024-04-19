@@ -40,19 +40,19 @@ let updateRescriptJson = async (~projectName, ~sourceDir, ~moduleSystem, ~suffix
 
 let getSuffixForModuleSystem = moduleSystem =>
   switch moduleSystem {
-  | "es6" => ".res.mjs"
+  | "esmodule" | "es6" | "es6-global" => ".res.mjs"
   | _ => ".res.js"
   }
 
-let moduleSystemOptions = [
+let getModuleSystemOptions = (~versions) => [
   {
     P.value: "commonjs",
     label: "CommonJS",
     hint: "Use require syntax and .res.js extension",
   },
   {
-    value: "es6",
-    label: "ES6",
+    value: RescriptVersions.esmModuleSystemName(versions),
+    label: "ES Modules",
     hint: "Use import syntax and .res.mjs extension",
   },
 ]
@@ -69,7 +69,7 @@ let addToExistingProject = async (~projectName) => {
 
   let moduleSystem = await P.select({
     message: "What module system will you use?",
-    options: moduleSystemOptions,
+    options: getModuleSystemOptions(~versions),
   })->P.resultOrRaise
 
   let suffix = moduleSystem->getSuffixForModuleSystem

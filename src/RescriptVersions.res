@@ -1,7 +1,7 @@
 module P = ClackPrompts
 
-let rescriptVersionRange = "~11 >11.0.0-rc.9"
-let rescriptCoreVersionRange = ">=0.6.0"
+let rescriptVersionRange = "11.x.x"
+let rescriptCoreVersionRange = ">=1.0.0"
 
 type versions = {rescriptVersion: string, rescriptCoreVersion: string}
 
@@ -59,7 +59,10 @@ let promptVersions = async () => {
 let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
   let packageManager = PackageManagers.getActivePackageManager()
   let packages = [`rescript@${rescriptVersion}`, `@rescript/core@${rescriptCoreVersion}`]
-  let command = `${packageManager} add ${packages->Array.joinWith(" ")}`
+  let command = `${packageManager} add ${packages->Array.join(" ")}`
 
   let _ = await Node.Promisified.ChildProcess.exec(command)
 }
+
+let esmModuleSystemName = ({rescriptVersion}) =>
+  CompareVersions.compareVersions(rescriptVersion, "11.1.0-rc.8") > 0. ? "esmodule" : "es6"
