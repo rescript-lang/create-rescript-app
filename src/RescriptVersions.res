@@ -63,3 +63,6 @@ let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
 
   let _ = await Node.Promisified.ChildProcess.exec(command)
 }
+
+let esmModuleSystemName = ({rescriptVersion}) =>
+  CompareVersions.compareVersions(rescriptVersion, "11.1.0-rc.8") > 0. ? "esmodule" : "es6"

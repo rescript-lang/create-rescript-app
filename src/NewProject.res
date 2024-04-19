@@ -23,10 +23,17 @@ let updatePackageJson = async (~projectName) =>
     }
   )
 
-let updateRescriptJson = async (~projectName) =>
+let updateRescriptJson = async (~projectName, ~versions) =>
   await JsonUtils.updateJsonFile("rescript.json", json =>
     switch json {
-    | Object(config) => config->Dict.set("name", String(projectName))
+    | Object(config) =>
+      config->Dict.set("name", String(projectName))
+      switch config->Dict.get("package-specs") {
+      | Some(Object(packageSpecs)) | Some(Array([Object(packageSpecs)])) =>
+        let moduleSystemName = versions->RescriptVersions.esmModuleSystemName
+        packageSpecs->Dict.set("module", String(moduleSystemName))
+      | _ => ()
+      }
     | _ => ()
     }
   )
@@ -68,7 +75,7 @@ let createNewProject = async () => {
 
   await Fs.Promises.rename("_gitignore", ".gitignore")
   await updatePackageJson(~projectName)
-  await updateRescriptJson(~projectName)
+  await updateRescriptJson(~projectName, ~versions)
 
   await RescriptVersions.installVersions(versions)
   let _ = await Promisified.ChildProcess.exec("git init")
