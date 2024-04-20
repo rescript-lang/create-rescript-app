@@ -23,6 +23,15 @@ let getPackageVersions = async (packageName, range) => {
   versions
 }
 
+let getCompatibleRescriptCoreVersions = (~rescriptVersion, ~rescriptCoreVersions) =>
+  if CompareVersions.compareVersions(rescriptVersion, "11.1.0")->Ordering.isLess {
+    rescriptCoreVersions->Array.filter(coreVersion =>
+      CompareVersions.compareVersions(coreVersion, "1.3.0")->Ordering.isLess
+    )
+  } else {
+    rescriptCoreVersions
+  }
+
 let promptVersions = async () => {
   let s = P.spinner()
 
@@ -43,6 +52,11 @@ let promptVersions = async () => {
       options: rescriptVersions->Array.map(v => {P.value: v}),
     })->P.resultOrRaise
   }
+
+  let rescriptCoreVersions = getCompatibleRescriptCoreVersions(
+    ~rescriptVersion,
+    ~rescriptCoreVersions,
+  )
 
   let rescriptCoreVersion = switch rescriptCoreVersions {
   | [version] => version
