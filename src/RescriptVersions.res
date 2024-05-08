@@ -5,24 +5,6 @@ let rescriptCoreVersionRange = ">=1.0.0"
 
 type versions = {rescriptVersion: string, rescriptCoreVersion: string}
 
-let getPackageVersions = async (packageName, range) => {
-  let {stdout} = await Node.Promisified.ChildProcess.exec(`npm view ${packageName} versions --json`)
-
-  let versions = switch JSON.parseExn(stdout) {
-  | Array(versions) =>
-    versions->Array.filterMap(json =>
-      switch json {
-      | String(version) if version->CompareVersions.satisfies(range) => Some(version)
-      | _ => None
-      }
-    )
-  | _ => []
-  }
-
-  versions->Array.reverse
-  versions
-}
-
 let getCompatibleRescriptCoreVersions = (~rescriptVersion, ~rescriptCoreVersions) =>
   if CompareVersions.compareVersions(rescriptVersion, "11.1.0")->Ordering.isLess {
     rescriptCoreVersions->Array.filter(coreVersion =>
@@ -38,8 +20,8 @@ let promptVersions = async () => {
   s->P.Spinner.start("Loading available versions...")
 
   let (rescriptVersions, rescriptCoreVersions) = await Promise.all2((
-    getPackageVersions("rescript", rescriptVersionRange),
-    getPackageVersions("@rescript/core", rescriptCoreVersionRange),
+    NpmRegistry.getPackageVersions("rescript", rescriptVersionRange),
+    NpmRegistry.getPackageVersions("@rescript/core", rescriptCoreVersionRange),
   ))
 
   s->P.Spinner.stop("Versions loaded.")
