@@ -3,7 +3,7 @@
 Quickly create new [ReScript](https://rescript-lang.org/) apps from project templates:
 
 ```sh
-npm create rescript-app
+npm create rescript-app@latest
 ```
 
 or
