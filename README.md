@@ -6,7 +6,7 @@ Quickly create new [ReScript](https://rescript-lang.org/) apps from project temp
 npm create rescript-app@latest
 ```
 
-or
+(note: `@latest` is important, otherwise npm may run an old version) or
 
 ```sh
 yarn create rescript-app
