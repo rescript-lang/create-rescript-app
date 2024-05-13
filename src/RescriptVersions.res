@@ -19,10 +19,12 @@ let promptVersions = async () => {
 
   s->P.Spinner.start("Loading available versions...")
 
-  let (rescriptVersions, rescriptCoreVersions) = await Promise.all2((
+  let (rescriptVersions, rescriptCoreVersions) = try await Promise.all2((
     NpmRegistry.getPackageVersions("rescript", rescriptVersionRange),
     NpmRegistry.getPackageVersions("@rescript/core", rescriptCoreVersionRange),
-  ))
+  )) catch {
+  | _exn => Error.make("Fetching versions from registry failed.")->Error.raise
+  }
 
   s->P.Spinner.stop("Versions loaded.")
 

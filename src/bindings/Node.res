@@ -64,6 +64,14 @@ module Url = {
   type t
 
   @module("node:url") external fileURLToPath: t => string = "fileURLToPath"
+
+  @new external makeUnsafe: string => t = "URL"
+  @get external href: t => string = "href"
+
+  let make = string =>
+    try Some(makeUnsafe(string)) catch {
+    | _exn => None
+    }
 }
 
 module Os = {

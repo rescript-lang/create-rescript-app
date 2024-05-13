@@ -1,25 +1,43 @@
-type response
+type response = {
+  ok: bool,
+  json: unit => promise<Js.Json.t>,
+}
 
-@send external toJson: response => promise<Js.Json.t> = "json"
 @val external fetch: string => promise<response> = "fetch"
 
-let getPackageVersions = async (packageName, range) => {
-  let result = await fetch(`https://registry.npmjs.org/${packageName}`)
+@scope(("process", "env"))
+external npm_config_registry: option<string> = "NPM_CONFIG_REGISTRY"
 
-  let versions = switch await result->toJson {
-  | Object(dict) =>
-    switch dict->Dict.get("versions") {
-    | Some(Object(dict)) => dict->Dict.keysToArray
+@inline
+let defaultRegistryUrl = "https://registry.npmjs.org"
+
+let getNpmRegistry = () =>
+  npm_config_registry
+  ->Option.flatMap(registry => registry->Node.Url.make)
+  ->Option.mapOr(defaultRegistryUrl, url => url->Node.Url.href)
+
+let getPackageVersions = async (packageName, range) => {
+  let registry = getNpmRegistry()
+
+  switch await fetch(`${registry}/${packageName}`) {
+  | response if response.ok =>
+    let versions = switch await response.json() {
+    | Object(dict) =>
+      switch dict->Dict.get("versions") {
+      | Some(Object(dict)) =>
+        dict
+        ->Dict.keysToArray
+        ->Array.filterMap(version =>
+          version->CompareVersions.satisfies(range) ? Some(version) : None
+        )
+      | _ => []
+      }
     | _ => []
     }
-  | _ => []
+
+    versions->Array.reverse
+    versions
+
+  | _responseNotOk => []
   }
-
-  let versions =
-    versions->Array.filterMap(version =>
-      version->CompareVersions.satisfies(range) ? Some(version) : None
-    )
-
-  versions->Array.reverse
-  versions
 }
