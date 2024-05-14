@@ -5,24 +5,6 @@ let rescriptCoreVersionRange = ">=1.0.0"
 
 type versions = {rescriptVersion: string, rescriptCoreVersion: string}
 
-let getPackageVersions = async (packageName, range) => {
-  let {stdout} = await Node.Promisified.ChildProcess.exec(`npm view ${packageName} versions --json`)
-
-  let versions = switch JSON.parseExn(stdout) {
-  | Array(versions) =>
-    versions->Array.filterMap(json =>
-      switch json {
-      | String(version) if version->CompareVersions.satisfies(range) => Some(version)
-      | _ => None
-      }
-    )
-  | _ => []
-  }
-
-  versions->Array.reverse
-  versions
-}
-
 let getCompatibleRescriptCoreVersions = (~rescriptVersion, ~rescriptCoreVersions) =>
   if CompareVersions.compareVersions(rescriptVersion, "11.1.0")->Ordering.isLess {
     rescriptCoreVersions->Array.filter(coreVersion =>
@@ -32,25 +14,36 @@ let getCompatibleRescriptCoreVersions = (~rescriptVersion, ~rescriptCoreVersions
     rescriptCoreVersions
   }
 
+let spinnerMessage = "Loading available versions..."
+
 let promptVersions = async () => {
   let s = P.spinner()
 
-  s->P.Spinner.start("Loading available versions...")
+  s->P.Spinner.start(spinnerMessage)
 
-  let (rescriptVersions, rescriptCoreVersions) = await Promise.all2((
-    getPackageVersions("rescript", rescriptVersionRange),
-    getPackageVersions("@rescript/core", rescriptCoreVersionRange),
+  let (rescriptVersionsResult, rescriptCoreVersionsResult) = await Promise.all2((
+    NpmRegistry.getPackageVersions("rescript", rescriptVersionRange),
+    NpmRegistry.getPackageVersions("@rescript/core", rescriptCoreVersionRange),
   ))
 
-  s->P.Spinner.stop("Versions loaded.")
+  switch (rescriptVersionsResult, rescriptCoreVersionsResult) {
+  | (Ok(_), Ok(_)) => s->P.Spinner.stop("Versions loaded.")
+  | _ => s->P.Spinner.stop(spinnerMessage)
+  }
 
-  let rescriptVersion = switch rescriptVersions {
-  | [version] => version
-  | _ =>
+  let rescriptVersion = switch rescriptVersionsResult {
+  | Ok([version]) => version
+  | Ok(rescriptVersions) =>
     await P.select({
       message: "ReScript version?",
       options: rescriptVersions->Array.map(v => {P.value: v}),
     })->P.resultOrRaise
+  | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
+  }
+
+  let rescriptCoreVersions = switch rescriptCoreVersionsResult {
+  | Ok(versions) => versions
+  | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
   }
 
   let rescriptCoreVersions = getCompatibleRescriptCoreVersions(
