@@ -66,9 +66,8 @@ let promptVersions = async () => {
 let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
   let packageManager = PackageManagers.getActivePackageManager()
   let packages = [`rescript@${rescriptVersion}`, `@rescript/core@${rescriptCoreVersion}`]
-  let command = `${packageManager} add ${packages->Array.join(" ")}`
 
-  let _ = await Node.Promisified.ChildProcess.exec(command)
+  let _ = await Node.Promisified.ChildProcess.execFile(packageManager, ["add", ...packages])
 }
 
 let esmModuleSystemName = ({rescriptVersion}) =>

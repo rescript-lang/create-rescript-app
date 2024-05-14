@@ -78,7 +78,7 @@ let createNewProject = async () => {
   await updateRescriptJson(~projectName, ~versions)
 
   await RescriptVersions.installVersions(versions)
-  let _ = await Promisified.ChildProcess.exec("git init")
+  let _ = await Promisified.ChildProcess.execFile("git", ["init"])
 
   s->P.Spinner.stop("Project created.")
 }
