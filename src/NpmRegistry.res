@@ -1,5 +1,6 @@
 type response = {
   ok: bool,
+  status: int,
   json: unit => promise<Js.Json.t>,
 }
 
@@ -16,28 +17,45 @@ let getNpmRegistry = () =>
   ->Option.flatMap(registry => registry->Node.Url.make)
   ->Option.mapOr(defaultRegistryUrl, url => url->Node.Url.href)
 
-let getPackageVersions = async (packageName, range) => {
-  let registry = getNpmRegistry()
+type fetchError =
+  | FetchError({message: string})
+  | HttpError({status: int})
+  | ParseError
 
-  switch await fetch(`${registry}/${packageName}`) {
+let getFetchErrorMessage = fetchError => {
+  let message = switch fetchError {
+  | FetchError({message}) => `Fetch error. Message: ${message}`
+  | HttpError({status}) => `Http error. Status: ${status->Int.toString}`
+  | ParseError => "Parse error."
+  }
+
+  `Fetching versions from registry failed: ${message}`
+}
+
+let getPackageVersions = async (packageName, range) => {
+  let registryUrl = getNpmRegistry()
+
+  switch await fetch(`${registryUrl}/${packageName}`) {
   | response if response.ok =>
-    let versions = switch await response.json() {
+    switch await response.json() {
     | Object(dict) =>
       switch dict->Dict.get("versions") {
       | Some(Object(dict)) =>
-        dict
-        ->Dict.keysToArray
-        ->Array.filterMap(version =>
-          version->CompareVersions.satisfies(range) ? Some(version) : None
-        )
-      | _ => []
+        let versions =
+          dict
+          ->Dict.keysToArray
+          ->Array.filterMap(version =>
+            version->CompareVersions.satisfies(range) ? Some(version) : None
+          )
+        versions->Array.reverse
+        versions->Ok
+
+      | _ => Error(ParseError)
       }
-    | _ => []
+    | _ => Error(ParseError)
     }
 
-    versions->Array.reverse
-    versions
-
-  | _responseNotOk => []
+  | responseNotOk => Error(HttpError({status: responseNotOk.status}))
+  | exception Exn.Error(exn) => Error(FetchError({message: exn->ErrorUtils.getErrorMessage}))
   }
 }

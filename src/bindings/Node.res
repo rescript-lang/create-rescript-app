@@ -70,7 +70,7 @@ module Url = {
 
   let make = string =>
     try Some(makeUnsafe(string)) catch {
-    | _exn => None
+    | Exn.Error(_exn) => None
     }
 }
 

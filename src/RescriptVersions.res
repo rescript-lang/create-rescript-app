@@ -14,27 +14,36 @@ let getCompatibleRescriptCoreVersions = (~rescriptVersion, ~rescriptCoreVersions
     rescriptCoreVersions
   }
 
+let spinnerMessage = "Loading available versions..."
+
 let promptVersions = async () => {
   let s = P.spinner()
 
-  s->P.Spinner.start("Loading available versions...")
+  s->P.Spinner.start(spinnerMessage)
 
-  let (rescriptVersions, rescriptCoreVersions) = try await Promise.all2((
+  let (rescriptVersionsResult, rescriptCoreVersionsResult) = await Promise.all2((
     NpmRegistry.getPackageVersions("rescript", rescriptVersionRange),
     NpmRegistry.getPackageVersions("@rescript/core", rescriptCoreVersionRange),
-  )) catch {
-  | _exn => Error.make("Fetching versions from registry failed.")->Error.raise
+  ))
+
+  switch (rescriptVersionsResult, rescriptCoreVersionsResult) {
+  | (Ok(_), Ok(_)) => s->P.Spinner.stop("Versions loaded.")
+  | _ => s->P.Spinner.stop(spinnerMessage)
   }
 
-  s->P.Spinner.stop("Versions loaded.")
-
-  let rescriptVersion = switch rescriptVersions {
-  | [version] => version
-  | _ =>
+  let rescriptVersion = switch rescriptVersionsResult {
+  | Ok([version]) => version
+  | Ok(rescriptVersions) =>
     await P.select({
       message: "ReScript version?",
       options: rescriptVersions->Array.map(v => {P.value: v}),
     })->P.resultOrRaise
+  | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
+  }
+
+  let rescriptCoreVersions = switch rescriptCoreVersionsResult {
+  | Ok(versions) => versions
+  | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
   }
 
   let rescriptCoreVersions = getCompatibleRescriptCoreVersions(
