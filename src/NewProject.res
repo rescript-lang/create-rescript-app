@@ -32,6 +32,9 @@ let updateRescriptJson = async (~projectName, ~versions) =>
       | Some(Object(packageSpecs)) | Some(Array([Object(packageSpecs)])) =>
         let moduleSystemName = versions->RescriptVersions.esmModuleSystemName
         packageSpecs->Dict.set("module", String(moduleSystemName))
+
+        let suffix = moduleSystemName->ModuleSystem.getSuffix
+        config->Dict.set("suffix", String(suffix))
       | _ => ()
       }
     | _ => ()

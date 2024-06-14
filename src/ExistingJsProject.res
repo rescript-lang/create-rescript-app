@@ -38,12 +38,6 @@ let updateRescriptJson = async (~projectName, ~sourceDir, ~moduleSystem, ~suffix
     }
   )
 
-let getSuffixForModuleSystem = moduleSystem =>
-  switch moduleSystem {
-  | "esmodule" | "es6" | "es6-global" => ".res.mjs"
-  | _ => ".res.js"
-  }
-
 let getModuleSystemOptions = (~versions) => [
   {
     P.value: "commonjs",
@@ -72,7 +66,7 @@ let addToExistingProject = async (~projectName) => {
     options: getModuleSystemOptions(~versions),
   })->P.resultOrRaise
 
-  let suffix = moduleSystem->getSuffixForModuleSystem
+  let suffix = moduleSystem->ModuleSystem.getSuffix
 
   let shouldCheckJsFilesIntoGit = await P.confirm({
     message: `Do you want to check generated ${suffix} files into git?`,
