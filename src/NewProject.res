@@ -51,27 +51,15 @@ let getTemplateOptions = () =>
     hint: shortDescription,
   })
 
-let createNewProject = async () => {
-  P.note(~title="New Project", ~message=newProjectMessage)
-
-  let projectName = await P.text({
-    message: "What is the name of your new ReScript project?",
-    placeholder: "my-rescript-app",
-    initialValue: ?Process.argv[2],
-    validate: validateProjectName,
-  })->P.resultOrRaise
-
-  let templateName =
-    await P.select({message: "Select a template", options: getTemplateOptions()})->P.resultOrRaise
-
-  let versions = await RescriptVersions.promptVersions()
-
+let createProject = async (~templateName, ~projectName, ~versions) => {
   let templatePath = CraPaths.getTemplatePath(~templateName)
   let projectPath = Path.join2(Process.cwd(), projectName)
 
   let s = P.spinner()
 
-  s->P.Spinner.start("Creating project...")
+  if !CI.isRunningInCI {
+    s->P.Spinner.start("Creating project...")
+  }
 
   await Fs.Promises.cp(templatePath, projectPath, ~options={recursive: true})
   Process.chdir(projectPath)
@@ -83,5 +71,34 @@ let createNewProject = async () => {
   await RescriptVersions.installVersions(versions)
   let _ = await Promisified.ChildProcess.execFile("git", ["init"])
 
-  s->P.Spinner.stop("Project created.")
+  if !CI.isRunningInCI {
+    s->P.Spinner.stop("Project created.")
+  }
+}
+
+let createNewProject = async () => {
+  P.note(~title="New Project", ~message=newProjectMessage)
+
+  if CI.isRunningInCI {
+    // type versions = {rescriptVersion: string, rescriptCoreVersion: string}
+    await createProject(
+      ~templateName="rescript-template-basic",
+      ~projectName="test",
+      ~versions={rescriptVersion: "11.1.1", rescriptCoreVersion: "1.5.0"},
+    )
+  } else {
+    let projectName = await P.text({
+      message: "What is the name of your new ReScript project?",
+      placeholder: "my-rescript-app",
+      initialValue: ?Process.argv[2],
+      validate: validateProjectName,
+    })->P.resultOrRaise
+
+    let templateName =
+      await P.select({message: "Select a template", options: getTemplateOptions()})->P.resultOrRaise
+
+    let versions = await RescriptVersions.promptVersions()
+
+    await createProject(~templateName, ~projectName, ~versions)
+  }
 }
