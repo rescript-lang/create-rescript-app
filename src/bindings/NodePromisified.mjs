@@ -1,4 +1,4 @@
-import { exec as execCallback } from "child_process";
+import { execFile as execFileCallback } from "child_process";
 import { promisify } from "util";
 
-export const exec = promisify(execCallback);
+export const execFile = promisify(execFileCallback);
