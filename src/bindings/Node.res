@@ -85,6 +85,6 @@ module Promisified = {
     type execResult = {stdout: string, stderr: string}
 
     @module("./NodePromisified.mjs")
-    external execFile: (string, array<string>) => promise<execResult> = "execFile"
+    external exec: string => promise<execResult> = "exec"
   }
 }
