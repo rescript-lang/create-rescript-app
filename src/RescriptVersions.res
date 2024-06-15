@@ -66,7 +66,14 @@ let promptVersions = async () => {
 let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
   let packageManager = PackageManagers.getActivePackageManager()
   let packages = [`rescript@${rescriptVersion}`, `@rescript/core@${rescriptCoreVersion}`]
-  let command = `${packageManager} add ${packages->Array.join(" ")}`
+
+  // #58: Windows: packageManager may be something like
+  // "C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js".
+  //
+  // Therefore, packageManager needs to be in quotes, and we need to prepend "node "
+  // if packageManager points to a JS file, otherwise the invocation will hang.
+  let maybeNode = packageManager->String.endsWith("js") ? "node " : ""
+  let command = `${maybeNode}"${packageManager}" add ${packages->Array.join(" ")}`
 
   let _ = await Node.Promisified.ChildProcess.exec(command)
 }

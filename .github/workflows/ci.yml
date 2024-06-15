@@ -26,7 +26,7 @@ jobs:
             macos-14, # ARM
             ubuntu-latest, # x64
             buildjet-2vcpu-ubuntu-2204-arm, # ARM
-            # windows-latest, # deactivated for now as there is still a Windows issue
+            windows-latest,
           ]
 
     runs-on: ${{matrix.os}}
