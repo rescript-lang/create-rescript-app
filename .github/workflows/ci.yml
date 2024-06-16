@@ -18,6 +18,42 @@ concurrency:
 
 jobs:
   build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: NPM install
+        run: npm ci
+
+      - name: Build
+        run: npx rescript
+
+      - name: Pack
+        run: npm pack
+
+      - name: Prepare package upload
+        # For pull requests, pass the correct commit SHA explicitly as GITHUB_SHA points to the wrong commit.
+        run: node .github/workflows/prepare_package_upload.js ${{ github.event.pull_request.head.sha }}
+
+      - name: "Upload artifact: npm package"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.artifact_filename }}
+          path: ${{ env.artifact_filename }}
+
+    outputs:
+      artifact_filename: ${{ env.artifact_filename }}
+
+  test:
+    needs: build
+
     strategy:
       fail-fast: false
       matrix:
@@ -40,17 +76,15 @@ jobs:
         with:
           node-version: 18
 
-      - name: NPM install
-        run: npm ci
-
-      - name: Build
-        run: npx rescript
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_filename }}
 
       - name: Test
         env:
           CI: 1
         shell: bash
         run: |
-          npm pack
-          npm i -g ./create-rescript-app-*.tgz
+          npm i -g ${{ needs.build.outputs.artifact_filename }}
           npx create-rescript-app
