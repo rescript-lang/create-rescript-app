@@ -88,3 +88,31 @@ jobs:
         run: |
           npm i -g ${{ needs.build.outputs.artifact_filename }}
           npx create-rescript-app
+
+  publish:
+    needs: [build, test]
+
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          registry-url: https://registry.npmjs.org # Needed to make auth work for publishing
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.artifact_filename }}
+
+      - name: Publish packages on npm with tag "ci"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+        run: |
+          npm publish ${{ needs.build.outputs.artifact_filename }} --tag ci
