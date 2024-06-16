@@ -1,6 +1,6 @@
 {
   "name": "create-rescript-app",
-  "version": "1.8.0-beta.1",
+  "version": "1.8.0",
   "description": "Quickly create new ReScript apps from project templates.",
   "main": "out/create-rescript-app.mjs",
   "scripts": {
