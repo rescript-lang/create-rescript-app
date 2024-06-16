@@ -35,7 +35,13 @@ https://rescript-lang.org`,
   let rescriptJsonPath = Path.join2(Process.cwd(), "rescript.json")
   let bsconfigJsonPath = Path.join2(Process.cwd(), "bsconfig.json")
 
-  if Fs.existsSync(rescriptJsonPath) || Fs.existsSync(bsconfigJsonPath) {
+  if CI.isRunningInCI {
+    P.note(~title="CI Mode", ~message="Running in CI, will create a test project")
+    await handleError(~outro="Project creation failed.", async () => {
+      await NewProject.createNewProject()
+      P.outro("CI test completed successfully.")
+    })
+  } else if Fs.existsSync(rescriptJsonPath) || Fs.existsSync(bsconfigJsonPath) {
     ExistingRescriptProject.showUpgradeHint()
     P.outro("No changes were made to your project.")
   } else if Fs.existsSync(packageJsonPath) {

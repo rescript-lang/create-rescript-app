@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+    # See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"
+
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}-1
+  # Cancel previous builds for pull requests only.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [
+            macos-13, # x64
+            macos-14, # ARM
+            ubuntu-latest, # x64
+            buildjet-2vcpu-ubuntu-2204-arm, # ARM
+            # windows-latest, # deactivated for now as there is still a Windows issue
+          ]
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: NPM install
+        run: npm ci
+
+      - name: Build
+        run: npx rescript
+
+      - name: Test
+        env:
+          CI: 1
+        shell: bash
+        run: |
+          npm pack
+          npm i -g ./create-rescript-app-*.tgz
+          npx create-rescript-app
