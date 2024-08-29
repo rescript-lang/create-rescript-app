@@ -36,9 +36,9 @@ function rescript() {
     },
     buildStart: async function () {
       if (command === "build") {
-        logger.info(execSync("npx rescript").toString().trim());
+        logger.info(execSync("rescript").toString().trim());
       } else {
-        rescriptProcressRef = spawn("npx", ["rescript", "-w"]);
+        rescriptProcressRef = spawn("rescript", ["-w"]);
         logger.info(`Spawned rescript -w`);
 
         // Process standard output
