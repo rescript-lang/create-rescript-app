@@ -11,13 +11,7 @@ This is a Vite-based template with following setup:
 
 ## Development
 
-Run ReScript in dev mode:
-
-```sh
-npm run res:dev
-```
-
-In another tab, run the Vite dev server:
+Run the Vite dev server and ReScript in dev mode:
 
 ```sh
 npm run dev
