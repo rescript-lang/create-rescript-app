@@ -25,9 +25,9 @@ function rescript() {
       }
 
       if (Array.isArray(config.server.watch.ignored)) {
-        config.server.watch.ignored.push("**/*.res");
+        config.server.watch.ignored.push("**/*.res?");
       } else {
-        config.server.watch.ignored = ["**/*.res"];
+        config.server.watch.ignored = ["**/*.res?"];
       }
     },
     configResolved: async function (resolvedConfig) {
