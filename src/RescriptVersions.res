@@ -38,7 +38,7 @@ let promptVersions = async () => {
     let options = rescriptVersions->Array.map(v => {P.value: v})
 
     let initialValue =
-      options->Array.find(o => o.value->String.startsWith("11."))
+      options->Array.find(o => o.value->String.startsWith("11."))->Option.map(o => o.value)
 
     let selectOptions = 
       switch initialValue {
