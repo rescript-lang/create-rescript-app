@@ -38,6 +38,7 @@ type selectOption = {
 type selectOptions = {
   message: string,
   options: array<selectOption>,
+  initialValue?: selectOption,
 }
 
 @module("@clack/prompts")

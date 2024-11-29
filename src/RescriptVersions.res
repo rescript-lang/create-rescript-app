@@ -35,10 +35,18 @@ let promptVersions = async () => {
   let rescriptVersion = switch rescriptVersionsResult {
   | Ok([version]) => version
   | Ok(rescriptVersions) =>
-    await P.select({
-      message: "ReScript version?",
-      options: rescriptVersions->Array.map(v => {P.value: v}),
-    })->P.resultOrRaise
+    let options = rescriptVersions->Array.map(v => {P.value: v})
+
+    let initialValue =
+      options->Array.find(o => o.value->String.startsWith("11."))
+
+    let selectOptions = 
+      switch initialValue {
+        | None => { ClackPrompts.message: "ReScript version?", options}
+        | Some(initialValue) => {message: "ReScript version?", options, initialValue}
+      }
+
+    await P.select(selectOptions)->P.resultOrRaise
   | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
   }
 
