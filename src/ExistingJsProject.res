@@ -20,7 +20,7 @@ let updatePackageJson = async () =>
     }
   )
 
-let updateRescriptJson = async (~projectName, ~sourceDir, ~moduleSystem, ~suffix) =>
+let updateRescriptJson = async (~projectName, ~sourceDir, ~moduleSystem, ~suffix, ~versions) =>
   await JsonUtils.updateJsonFile("rescript.json", json =>
     switch json {
     | Object(config) =>
@@ -33,6 +33,10 @@ let updateRescriptJson = async (~projectName, ~sourceDir, ~moduleSystem, ~suffix
       switch config->Dict.get("package-specs") {
       | Some(Object(sources)) => sources->Dict.set("module", String(moduleSystem))
       | _ => ()
+      }
+
+      if Option.isNone(versions.RescriptVersions.rescriptCoreVersion) {
+        RescriptJsonUtils.removeRescriptCore(config)
       }
     | _ => ()
     }
@@ -98,7 +102,7 @@ let addToExistingProject = async (~projectName) => {
   }
 
   await updatePackageJson()
-  await updateRescriptJson(~projectName, ~sourceDir, ~moduleSystem, ~suffix)
+  await updateRescriptJson(~projectName, ~sourceDir, ~moduleSystem, ~suffix, ~versions)
 
   if !Fs.existsSync(sourceDirPath) {
     await Fs.Promises.mkdir(sourceDirPath)

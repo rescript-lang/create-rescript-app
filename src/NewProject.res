@@ -37,6 +37,10 @@ let updateRescriptJson = async (~projectName, ~versions) =>
         config->Dict.set("suffix", String(suffix))
       | _ => ()
       }
+
+      if Option.isNone(versions.rescriptCoreVersion) {
+        RescriptJsonUtils.removeRescriptCore(config)
+      }
     | _ => ()
     }
   )
