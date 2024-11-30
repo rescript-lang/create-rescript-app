@@ -40,11 +40,7 @@ let promptVersions = async () => {
     let initialValue =
       options->Array.find(o => o.value->String.startsWith("11."))->Option.map(o => o.value)
 
-    let selectOptions = 
-      switch initialValue {
-        | None => { ClackPrompts.message: "ReScript version?", options}
-        | Some(initialValue) => {message: "ReScript version?", options, initialValue}
-      }
+    let selectOptions = {ClackPrompts.message: "ReScript version?", options, ?initialValue}
 
     await P.select(selectOptions)->P.resultOrRaise
   | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
