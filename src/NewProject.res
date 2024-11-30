@@ -37,6 +37,10 @@ let updateRescriptJson = async (~projectName, ~versions) =>
         config->Dict.set("suffix", String(suffix))
       | _ => ()
       }
+
+      if Option.isNone(versions.rescriptCoreVersion) {
+        RescriptJsonUtils.removeRescriptCore(config)
+      }
     | _ => ()
     }
   )
@@ -84,7 +88,7 @@ let createNewProject = async () => {
     await createProject(
       ~templateName="rescript-template-basic",
       ~projectName="test",
-      ~versions={rescriptVersion: "11.1.1", rescriptCoreVersion: "1.5.0"},
+      ~versions={rescriptVersion: "11.1.1", rescriptCoreVersion: Some("1.5.0")},
     )
   } else {
     let projectName = await P.text({

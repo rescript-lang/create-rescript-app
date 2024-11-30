@@ -1,4 +1,4 @@
-type versions = {rescriptVersion: string, rescriptCoreVersion: string}
+type versions = {rescriptVersion: string, rescriptCoreVersion: option<string>}
 
 let promptVersions: unit => promise<versions>
 

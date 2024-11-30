@@ -1,9 +1,10 @@
 module P = ClackPrompts
 
-let rescriptVersionRange = "11.x.x"
+let rescript12VersionRange = ">=12.0.0-alpha.5"
+let rescriptVersionRange = `11.x.x || ${rescript12VersionRange}`
 let rescriptCoreVersionRange = ">=1.0.0"
 
-type versions = {rescriptVersion: string, rescriptCoreVersion: string}
+type versions = {rescriptVersion: string, rescriptCoreVersion: option<string>}
 
 let getCompatibleRescriptCoreVersions = (~rescriptVersion, ~rescriptCoreVersions) =>
   if CompareVersions.compareVersions(rescriptVersion, "11.1.0")->Ordering.isLess {
@@ -34,10 +35,14 @@ let promptVersions = async () => {
   let rescriptVersion = switch rescriptVersionsResult {
   | Ok([version]) => version
   | Ok(rescriptVersions) =>
-    await P.select({
-      message: "ReScript version?",
-      options: rescriptVersions->Array.map(v => {P.value: v}),
-    })->P.resultOrRaise
+    let options = rescriptVersions->Array.map(v => {P.value: v})
+
+    let initialValue =
+      options->Array.find(o => o.value->String.startsWith("11."))->Option.map(o => o.value)
+
+    let selectOptions = {ClackPrompts.message: "ReScript version?", options, ?initialValue}
+
+    await P.select(selectOptions)->P.resultOrRaise
   | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
   }
 
@@ -51,13 +56,17 @@ let promptVersions = async () => {
     ~rescriptCoreVersions,
   )
 
+  let isRescript12 = CompareVersions.satisfies(rescriptVersion, rescript12VersionRange)
+
   let rescriptCoreVersion = switch rescriptCoreVersions {
-  | [version] => version
+  | _ if isRescript12 => None
+  | [version] => Some(version)
   | _ =>
-    await P.select({
+    let version = await P.select({
       message: "ReScript Core version?",
       options: rescriptCoreVersions->Array.map(v => {P.value: v}),
     })->P.resultOrRaise
+    Some(version)
   }
 
   {rescriptVersion, rescriptCoreVersion}
@@ -65,7 +74,13 @@ let promptVersions = async () => {
 
 let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
   let packageManager = PackageManagers.getActivePackageManager()
-  let packages = [`rescript@${rescriptVersion}`, `@rescript/core@${rescriptCoreVersion}`]
+  let packages = switch rescriptCoreVersion {
+  | Some(rescriptCoreVersion) => [
+      `rescript@${rescriptVersion}`,
+      `@rescript/core@${rescriptCoreVersion}`,
+    ]
+  | None => [`rescript@${rescriptVersion}`]
+  }
 
   // #58: Windows: packageManager may be something like
   // "C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js".
