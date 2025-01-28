@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -60,8 +60,8 @@ jobs:
         os: [
             macos-13, # x64
             macos-14, # ARM
-            ubuntu-latest, # x64
-            buildjet-2vcpu-ubuntu-2204-arm, # ARM
+            ubuntu-24.04, # x64
+            ubuntu-24.04-arm, # ARM
             windows-latest,
           ]
 
@@ -94,7 +94,7 @@ jobs:
 
     if: startsWith(github.ref, 'refs/tags/v')
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
