@@ -78,6 +78,13 @@ let createProject = async (~templateName, ~projectName, ~versions) => {
   if !CI.isRunningInCI {
     s->P.Spinner.stop("Project created.")
   }
+
+  P.note(
+    ~title="Get started",
+    ~message=`cd ${projectName}
+
+# See the project's README.md for more information.`,
+  )
 }
 
 let createNewProject = async () => {
