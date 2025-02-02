@@ -9,10 +9,10 @@ let default = (props: props) =>
     <a href=props.href target="_blank"> {React.string("`src/Examples.res`")} </a>
   </div>
 
-let getServerSideProps = _ctx => {
+let getStaticProps = _ctx => {
   let props = {
-    msg: "This page was rendered with getServerSideProps. You can find the source code here: ",
-    href: "https://github.com/ryyppy/nextjs-default/tree/master/src/Examples.res",
+    msg: "This page was rendered with getStaticProps. You can find the source code here: ",
+    href: "https://github.com/rescript-lang/create-rescript-app/blob/master/templates/rescript-template-nextjs/src/Examples.res",
   }
   Promise.resolve({"props": props})
 }
