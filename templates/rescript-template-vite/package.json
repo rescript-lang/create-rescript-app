@@ -12,14 +12,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rescript/react": "^0.12.1",
+    "@rescript/react": "^0.13.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "@tailwindcss/vite": "^4.0.0",
-    "tailwindcss": "^4.0.0",
+    "@tailwindcss/vite": "^4.0.3",
+    "tailwindcss": "^4.0.3",
     "vite": "^6.0.0"
   }
 }
