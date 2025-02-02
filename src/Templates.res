@@ -15,7 +15,7 @@ let templates = [
   {
     name: "rescript-template-nextjs",
     displayName: "Next.js",
-    shortDescription: "Next.js 14 and Tailwind CSS",
+    shortDescription: "Next.js 15 with static export and Tailwind 3",
   },
   {
     name: basicTemplateName,
