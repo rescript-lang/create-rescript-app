@@ -15,10 +15,24 @@ let validateProjectName = projectName =>
     None
   }
 
-let updatePackageJson = async (~projectName) =>
+let updatePackageJson = async (~projectName, ~versions) =>
   await JsonUtils.updateJsonFile("package.json", json =>
     switch json {
-    | Object(config) => config->Dict.set("name", String(projectName))
+    | Object(config) => {
+      config->Dict.set("name", String(projectName))
+
+      let scripts = switch config->Dict.get("scripts") {
+      | Some(Object(scripts)) => scripts
+      | _ =>
+        let scripts = Dict.make()
+        config->Dict.set("scripts", Object(scripts))
+        scripts
+      }
+
+      if RescriptVersions.usesRewatch(versions) {
+        scripts->Dict.set("res:dev", String("rescript watch"))
+      }
+    }
     | _ => ()
     }
   )
@@ -69,7 +83,7 @@ let createProject = async (~templateName, ~projectName, ~versions) => {
   Process.chdir(projectPath)
 
   await Fs.Promises.rename("_gitignore", ".gitignore")
-  await updatePackageJson(~projectName)
+  await updatePackageJson(~projectName, ~versions)
   await updateRescriptJson(~projectName, ~versions)
 
   await RescriptVersions.installVersions(versions)

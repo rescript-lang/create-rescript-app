@@ -2,7 +2,7 @@ open Node
 
 module P = ClackPrompts
 
-let updatePackageJson = async () =>
+let updatePackageJson = async (~versions) =>
   await JsonUtils.updateJsonFile("package.json", json =>
     switch json {
     | Object(config) =>
@@ -15,7 +15,12 @@ let updatePackageJson = async () =>
       }
       scripts->Dict.set("res:build", String("rescript"))
       scripts->Dict.set("res:clean", String("rescript clean"))
-      scripts->Dict.set("res:dev", String("rescript -w"))
+
+      if RescriptVersions.usesRewatch(versions) {
+        scripts->Dict.set("res:dev", String("rescript watch"))
+      } else {
+        scripts->Dict.set("res:dev", String("rescript -w"))
+      }
     | _ => ()
     }
   )
@@ -101,7 +106,7 @@ let addToExistingProject = async (~projectName) => {
     await Fs.Promises.appendFile(gitignorePath, `**/*${suffix}${Os.eol}`)
   }
 
-  await updatePackageJson()
+  await updatePackageJson(~versions)
   await updateRescriptJson(~projectName, ~sourceDir, ~moduleSystem, ~suffix, ~versions)
 
   if !Fs.existsSync(sourceDirPath) {
