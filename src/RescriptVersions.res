@@ -3,6 +3,7 @@ module P = ClackPrompts
 let rescript12VersionRange = ">=12.0.0-alpha.5"
 let rescriptVersionRange = `11.x.x || ${rescript12VersionRange}`
 let rescriptCoreVersionRange = ">=1.0.0"
+let rescriptRewatchVersionRange = ">=12.0.0-alpha.15"
 
 type versions = {rescriptVersion: string, rescriptCoreVersion: option<string>}
 
@@ -95,3 +96,6 @@ let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
 
 let esmModuleSystemName = ({rescriptVersion}) =>
   CompareVersions.compareVersions(rescriptVersion, "11.1.0-rc.8") > 0. ? "esmodule" : "es6"
+
+let usesRewatch = ({rescriptVersion}) =>
+  CompareVersions.satisfies(rescriptVersion, rescriptRewatchVersionRange)
