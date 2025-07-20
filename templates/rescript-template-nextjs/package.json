@@ -4,7 +4,7 @@
   "author": "Patrick Ecker <ryyppy@users.noreply.github.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "@rescript/react": "^0.13.0",
+    "@rescript/react": "^0.13.1",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
