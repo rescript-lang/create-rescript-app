@@ -27,15 +27,12 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
 
       - name: NPM install
         run: npm ci
 
-      - name: Build
-        run: npx rescript
-
-      - name: Pack
+      - name: Pack (includes rescript build)
         run: npm pack
 
       - name: Prepare package upload
@@ -74,7 +71,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20 # minimum supported version
 
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -103,7 +100,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 24
           registry-url: https://registry.npmjs.org # Needed to make auth work for publishing
 
       - name: Download artifacts

@@ -63,7 +63,7 @@ let resultOrRaise = async promise => {
   let result = await promise
 
   if result->isCancel {
-    raise(Canceled)
+    throw(Canceled)
   } else {
     result->unsafeGetResultValue
   }

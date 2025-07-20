@@ -56,6 +56,6 @@ let getPackageVersions = async (packageName, range) => {
     }
 
   | responseNotOk => Error(HttpError({status: responseNotOk.status}))
-  | exception Exn.Error(exn) => Error(FetchError({message: exn->ErrorUtils.getErrorMessage}))
+  | exception JsExn(exn) => Error(FetchError({message: exn->ErrorUtils.getErrorMessage}))
   }
 }

@@ -2,7 +2,7 @@ open Node
 
 let readJsonFile = async filename => {
   let contents = await Fs.Promises.readFile(filename)
-  JSON.parseExn(contents)
+  JSON.parseOrThrow(contents)
 }
 
 let updateFile = async (filename, updateFn) => {
@@ -13,7 +13,7 @@ let updateFile = async (filename, updateFn) => {
 
 let updateJsonFile = (filename, updateFn) =>
   updateFile(filename, contents => {
-    let json = JSON.parseExn(contents)
+    let json = JSON.parseOrThrow(contents)
     updateFn(json)
     JSON.stringify(json, ~space=2)
   })
