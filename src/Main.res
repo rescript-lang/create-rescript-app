@@ -18,7 +18,7 @@ let handleError = async (~outro, perform) =>
     Process.exitWithCode(1)
   }
 
-let run = async () => {
+let main = async () => {
   let version = await getVersion()
   P.intro(C.dim(`create-rescript-app ${version}`))
 
@@ -66,6 +66,10 @@ https://rescript-lang.org`,
   }
 }
 
-try await run() catch {
-| P.Canceled => P.cancel("Canceled.")
-}
+// Do not use top-level await, otherwise we can't package as .cjs.
+let run = async () =>
+  try await main() catch {
+  | P.Canceled => P.cancel("Canceled.")
+  }
+
+run()->Promise.ignore
