@@ -1,6 +1,6 @@
 module P = ClackPrompts
 
-let rescript12VersionRange = ">=12.0.0-alpha.5"
+let rescript12VersionRange = ">=12.0.0-beta.1"
 let rescriptVersionRange = `11.x.x || ${rescript12VersionRange}`
 let rescriptCoreVersionRange = ">=1.0.0"
 let rescriptRewatchVersionRange = ">=12.0.0-alpha.15"
