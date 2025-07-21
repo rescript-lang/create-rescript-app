@@ -1,5 +1,5 @@
 let getErrorMessage = exn =>
-  switch exn->Exn.message {
+  switch exn->JsExn.message {
   | Some(message) => message
   | None => exn->String.make
   }

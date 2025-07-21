@@ -44,12 +44,12 @@ let promptVersions = async () => {
     let selectOptions = {ClackPrompts.message: "ReScript version?", options, ?initialValue}
 
     await P.select(selectOptions)->P.resultOrRaise
-  | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
+  | Error(error) => error->NpmRegistry.getFetchErrorMessage->JsError.throwWithMessage
   }
 
   let rescriptCoreVersions = switch rescriptCoreVersionsResult {
   | Ok(versions) => versions
-  | Error(error) => error->NpmRegistry.getFetchErrorMessage->Error.make->Error.raise
+  | Error(error) => error->NpmRegistry.getFetchErrorMessage->JsError.throwWithMessage
   }
 
   let rescriptCoreVersions = getCompatibleRescriptCoreVersions(
