@@ -3,4 +3,4 @@
 **/*.res.js
 **/*.res.mjs
 .bsb.lock
-out/create-rescript-app.mjs
+out/create-rescript-app.cjs
