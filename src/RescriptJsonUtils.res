@@ -27,3 +27,29 @@ let removeRescriptCore = (config: Dict.t<JSON.t>) => {
   | _ => ()
   }
 }
+
+let modernizeConfigurationFields = (config: Dict.t<JSON.t>) => {
+  // Rename "bs-dependencies" to "dependencies"
+  switch config->Dict.get("bs-dependencies") {
+  | Some(dependencies) =>
+    config->Dict.set("dependencies", dependencies)
+    config->Dict.delete("bs-dependencies")
+  | _ => ()
+  }
+
+  // Rename "bs-dev-dependencies" to "devDependencies"
+  switch config->Dict.get("bs-dev-dependencies") {
+  | Some(devDependencies) =>
+    config->Dict.set("dev-dependencies", devDependencies)
+    config->Dict.delete("bs-dev-dependencies")
+  | _ => ()
+  }
+
+  // Rename "bsc-flags" to "compiler-flags"
+  switch config->Dict.get("bsc-flags") {
+  | Some(compilerFlags) =>
+    config->Dict.set("compiler-flags", compilerFlags)
+    config->Dict.delete("bsc-flags")
+  | _ => ()
+  }
+}
