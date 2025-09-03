@@ -28,28 +28,17 @@ let removeRescriptCore = (config: Dict.t<JSON.t>) => {
   }
 }
 
+let renameConfigKey = (config: Dict.t<JSON.t>, ~from, ~to) => {
+  switch config->Dict.get(from) {
+  | Some(value) =>
+    config->Dict.set(to, value)
+    config->Dict.delete(from)
+  | _ => ()
+  }
+}
+
 let modernizeConfigurationFields = (config: Dict.t<JSON.t>) => {
-  // Rename "bs-dependencies" to "dependencies"
-  switch config->Dict.get("bs-dependencies") {
-  | Some(dependencies) =>
-    config->Dict.set("dependencies", dependencies)
-    config->Dict.delete("bs-dependencies")
-  | _ => ()
-  }
-
-  // Rename "bs-dev-dependencies" to "devDependencies"
-  switch config->Dict.get("bs-dev-dependencies") {
-  | Some(devDependencies) =>
-    config->Dict.set("dev-dependencies", devDependencies)
-    config->Dict.delete("bs-dev-dependencies")
-  | _ => ()
-  }
-
-  // Rename "bsc-flags" to "compiler-flags"
-  switch config->Dict.get("bsc-flags") {
-  | Some(compilerFlags) =>
-    config->Dict.set("compiler-flags", compilerFlags)
-    config->Dict.delete("bsc-flags")
-  | _ => ()
-  }
+  renameConfigKey(config, ~from="bs-dependencies", ~to="dependencies")
+  renameConfigKey(config, ~from="bs-dev-dependencies", ~to="dev-dependencies")
+  renameConfigKey(config, ~from="bsc-flags", ~to="compiler-flags")
 }
