@@ -2,7 +2,7 @@ open Node
 
 module P = ClackPrompts
 
-let packageNameRegExp = %re("/^[a-z0-9-]+$/")
+let packageNameRegExp = /^[a-z0-9-]+$/
 
 let validateProjectName = projectName =>
   if projectName->String.trim->String.length === 0 {
@@ -19,20 +19,20 @@ let updatePackageJson = async (~projectName, ~versions) =>
   await JsonUtils.updateJsonFile("package.json", json =>
     switch json {
     | Object(config) => {
-      config->Dict.set("name", String(projectName))
+        config->Dict.set("name", String(projectName))
 
-      let scripts = switch config->Dict.get("scripts") {
-      | Some(Object(scripts)) => scripts
-      | _ =>
-        let scripts = Dict.make()
-        config->Dict.set("scripts", Object(scripts))
-        scripts
-      }
+        let scripts = switch config->Dict.get("scripts") {
+        | Some(Object(scripts)) => scripts
+        | _ =>
+          let scripts = Dict.make()
+          config->Dict.set("scripts", Object(scripts))
+          scripts
+        }
 
-      if RescriptVersions.usesRewatch(versions) {
-        scripts->Dict.set("res:dev", String("rescript watch"))
+        if RescriptVersions.usesRewatch(versions) {
+          scripts->Dict.set("res:dev", String("rescript watch"))
+        }
       }
-    }
     | _ => ()
     }
   )
@@ -54,6 +54,11 @@ let updateRescriptJson = async (~projectName, ~versions) =>
 
       if Option.isNone(versions.rescriptCoreVersion) {
         RescriptJsonUtils.removeRescriptCore(config)
+      }
+
+      // https://github.com/rescript-lang/rescript/blob/master/CHANGELOG.md#1200-beta3
+      if CompareVersions.satisfies(versions.rescriptVersion, ">=12.0.0-beta.3") {
+        RescriptJsonUtils.modernizeConfigurationFields(config)
       }
     | _ => ()
     }
@@ -119,8 +124,10 @@ let createNewProject = async () => {
       validate: validateProjectName,
     })->P.resultOrRaise
 
-    let templateName =
-      await P.select({message: "Select a template", options: getTemplateOptions()})->P.resultOrRaise
+    let templateName = await P.select({
+      message: "Select a template",
+      options: getTemplateOptions(),
+    })->P.resultOrRaise
 
     let versions = await RescriptVersions.promptVersions()
 

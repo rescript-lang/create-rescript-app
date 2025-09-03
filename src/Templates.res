@@ -10,7 +10,7 @@ let templates = [
   {
     name: "rescript-template-vite",
     displayName: "Vite",
-    shortDescription: "Vite 6, React and Tailwind 4",
+    shortDescription: "Vite 7, React and Tailwind 4",
   },
   {
     name: "rescript-template-nextjs",
