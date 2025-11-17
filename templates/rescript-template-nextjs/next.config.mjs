@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 
 const rescript = JSON.parse(fs.readFileSync("./rescript.json"));
 const transpileModules = ["rescript"].concat(rescript["bs-dependencies"]);
@@ -18,6 +19,11 @@ const config = {
       config.resolve.fallback = {
         fs: false,
         path: false,
+      };
+      config.watchOptions = {
+        ...config.watchOptions,
+        // We ignore ReScript build artifacts to avoid unnecessarily triggering HMR on incremental compilation
+        ignored: ["**/lib/bs/**", "**/lib/ocaml/**", "**/lib/rescript.lock"],
       };
     }
 
