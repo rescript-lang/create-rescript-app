@@ -1,9 +1,9 @@
 module P = ClackPrompts
 
-let rescript12VersionRange = ">=12.0.0-beta.1"
-let rescriptVersionRange = `11.x.x || ${rescript12VersionRange}`
+let rescriptVersionRange = `11.x.x || 12.x.x`
 let rescriptCoreVersionRange = ">=1.0.0"
-let rescriptRewatchVersionRange = ">=12.0.0-alpha.15"
+let includesRewatchVersionRange = ">=12.0.0-alpha.15"
+let includesStdlibVersionRange = ">=12.0.0-beta.1"
 
 type versions = {rescriptVersion: string, rescriptCoreVersion: option<string>}
 
@@ -39,7 +39,7 @@ let promptVersions = async () => {
     let options = rescriptVersions->Array.map(v => {P.value: v})
 
     let initialValue =
-      options->Array.find(o => o.value->String.startsWith("11."))->Option.map(o => o.value)
+      options->Array.find(o => o.value->String.startsWith("12."))->Option.map(o => o.value)
 
     let selectOptions = {ClackPrompts.message: "ReScript version?", options, ?initialValue}
 
@@ -57,10 +57,10 @@ let promptVersions = async () => {
     ~rescriptCoreVersions,
   )
 
-  let isRescript12 = CompareVersions.satisfies(rescriptVersion, rescript12VersionRange)
+  let includesStdlib = CompareVersions.satisfies(rescriptVersion, includesStdlibVersionRange)
 
   let rescriptCoreVersion = switch rescriptCoreVersions {
-  | _ if isRescript12 => None
+  | _ if includesStdlib => None
   | [version] => Some(version)
   | _ =>
     let version = await P.select({
@@ -98,4 +98,4 @@ let esmModuleSystemName = ({rescriptVersion}) =>
   CompareVersions.compareVersions(rescriptVersion, "11.1.0-rc.8") > 0. ? "esmodule" : "es6"
 
 let usesRewatch = ({rescriptVersion}) =>
-  CompareVersions.satisfies(rescriptVersion, rescriptRewatchVersionRange)
+  CompareVersions.satisfies(rescriptVersion, includesRewatchVersionRange)

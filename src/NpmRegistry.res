@@ -1,7 +1,7 @@
 type response = {
   ok: bool,
   status: int,
-  json: unit => promise<Js.Json.t>,
+  json: unit => promise<JSON.t>,
 }
 
 @val external fetch: string => promise<response> = "fetch"
