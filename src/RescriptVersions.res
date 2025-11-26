@@ -1,3 +1,5 @@
+open Node
+
 module P = ClackPrompts
 
 let rescriptVersionRange = `11.x.x || 12.x.x`
@@ -73,8 +75,29 @@ let promptVersions = async () => {
   {rescriptVersion, rescriptCoreVersion}
 }
 
+let ensureYarnNodeModulesLinker = async () => {
+  let yarnRcPath = Path.join2(Process.cwd(), ".yarnrc.yml")
+
+  if !Fs.existsSync(yarnRcPath) {
+    let nodeLinkerLine = "nodeLinker: node-modules"
+    let eol = Os.eol
+
+    await Fs.Promises.writeFile(yarnRcPath, `${nodeLinkerLine}${eol}`)
+  }
+}
+
+let removeNpmPackageLock = async () => {
+  let packageLockPath = Path.join2(Process.cwd(), "package-lock.json")
+
+  if Fs.existsSync(packageLockPath) {
+    await Fs.Promises.unlink(packageLockPath)
+  }
+}
+
 let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
-  let packageManager = PackageManagers.getActivePackageManager()
+  let packageManagerInfo = await PackageManagers.getPackageManagerInfo()
+  let {command: packageManagerCommand, packageManager} = packageManagerInfo
+
   let packages = switch rescriptCoreVersion {
   | Some(rescriptCoreVersion) => [
       `rescript@${rescriptVersion}`,
@@ -83,15 +106,17 @@ let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
   | None => [`rescript@${rescriptVersion}`]
   }
 
-  // #58: Windows: packageManager may be something like
-  // "C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js".
-  //
-  // Therefore, packageManager needs to be in quotes, and we need to prepend "node "
-  // if packageManager points to a JS file, otherwise the invocation will hang.
-  let maybeNode = packageManager->String.endsWith("js") ? "node " : ""
-  let command = `${maybeNode}"${packageManager}" add ${packages->Array.join(" ")}`
+  if packageManager === YarnBerry {
+    await ensureYarnNodeModulesLinker()
+  }
 
-  let _ = await Node.Promisified.ChildProcess.exec(command)
+  let command = `${packageManagerCommand} add ${packages->Array.join(" ")}`
+
+  let _ = await Promisified.ChildProcess.exec(command)
+
+  if packageManager !== Npm {
+    await removeNpmPackageLock()
+  }
 }
 
 let esmModuleSystemName = ({rescriptVersion}) =>

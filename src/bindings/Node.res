@@ -24,6 +24,9 @@ module Fs = {
 
     @module("node:fs") @scope("promises")
     external mkdir: string => promise<unit> = "mkdir"
+
+    @module("node:fs") @scope("promises")
+    external unlink: string => promise<unit> = "unlink"
   }
 }
 
