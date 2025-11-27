@@ -108,8 +108,8 @@ jobs:
         with:
           name: ${{ needs.build.outputs.artifact_filename }}
 
-      - name: Publish packages on npm with tag "ci"
+      - name: Publish packages on npm with tag "next"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
         run: |
-          npm publish ${{ needs.build.outputs.artifact_filename }} --tag ci
+          npm publish ${{ needs.build.outputs.artifact_filename }} --tag next
