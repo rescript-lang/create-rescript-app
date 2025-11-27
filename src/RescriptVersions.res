@@ -96,7 +96,12 @@ let removeNpmPackageLock = async () => {
 
 let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
   let packageManagerInfo = await PackageManagers.getPackageManagerInfo()
-  let {command: packageManagerCommand, packageManager} = packageManagerInfo
+  let {packageManager} = packageManagerInfo
+
+  let execCommand = async command => {
+    let fullCommand = `${packageManagerInfo.command} ${command}`
+    let _ = await Promisified.ChildProcess.exec(fullCommand)
+  }
 
   let packages = switch rescriptCoreVersion {
   | Some(rescriptCoreVersion) => [
@@ -106,13 +111,13 @@ let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
   | None => [`rescript@${rescriptVersion}`]
   }
 
-  if packageManager === YarnBerry {
-    await ensureYarnNodeModulesLinker()
+  switch packageManager {
+  | YarnBerry => await ensureYarnNodeModulesLinker()
+  | Pnpm => await execCommand("import") // import versions from package-lock.json
+  | _ => ()
   }
 
-  let command = `${packageManagerCommand} add ${packages->Array.join(" ")}`
-
-  let _ = await Promisified.ChildProcess.exec(command)
+  await execCommand(`add ${packages->Array.join(" ")}`)
 
   if packageManager !== Npm {
     await removeNpmPackageLock()
