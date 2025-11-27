@@ -64,8 +64,7 @@ let updateRescriptJson = async (~projectName, ~versions) =>
     }
   )
 
-let newProjectMessage = `Create a new ReScript 11 project with modern defaults
-("Core" standard library, JSX v4)`
+let newProjectMessage = "Create a new ReScript project"
 
 let getTemplateOptions = () =>
   Templates.templates->Array.map(({name, displayName, shortDescription}) => {
