@@ -17,8 +17,23 @@ let defaultPackagerInfo = {packageManager: Npm, command: "npm"}
 @scope(("process", "env"))
 external npm_execpath: option<string> = "npm_execpath"
 
+@scope(("process", "env"))
+external npm_config_user_agent: option<string> = "npm_config_user_agent"
+
+let isPnpmUserAgent = () =>
+  switch npm_config_user_agent {
+  | Some(userAgent) =>
+    userAgent
+    ->String.toLowerCase
+    ->String.split(" ")
+    ->Array.some(segment => segment->String.startsWith("pnpm/"))
+  | None => false
+  }
+
 let getPackageManagerInfo = async () =>
+  // Note: pnpm does not set npm_execpath
   switch npm_execpath {
+  | None if isPnpmUserAgent() => {packageManager: Pnpm, command: "pnpm"}
   | None => defaultPackagerInfo
   | Some(execPath) =>
     // #58: Windows: packageManager may be something like
@@ -41,7 +56,7 @@ let getPackageManagerInfo = async () =>
       let isYarn1 = CompareVersions.compareVersions(version, "2.0.0")->Ordering.isLess
 
       Some(isYarn1 ? Yarn1 : YarnBerry)
-    | _ if filename->String.includes("pnpm") => Some(Pnpm)
+    | _ if filename->String.includes("pnpm") => Some(Pnpm) // in case pnpm sets npm_execpath in a future version
     | _ if filename->String.includes("npm") => Some(Npm) // make sure this goes after pnpm ...
     | _ if filename->String.includes("bun") => Some(Bun)
     | _ => None
