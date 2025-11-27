@@ -85,7 +85,11 @@ let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
 
   switch packageManager {
   | YarnBerry => await ensureYarnNodeModulesLinker()
-  | Pnpm => await execCommand("import") // import versions from package-lock.json
+  | Pnpm =>
+    let hasPackageLock = Path.join2(Process.cwd(), "package-lock.json")->Fs.existsSync
+    if hasPackageLock {
+      await execCommand("import") // import versions from package-lock.json
+    }
   | _ => ()
   }
 
