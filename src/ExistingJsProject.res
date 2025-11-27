@@ -47,16 +47,16 @@ let updateRescriptJson = async (~projectName, ~sourceDir, ~moduleSystem, ~suffix
     }
   )
 
-let getModuleSystemOptions = (~versions) => [
+let getModuleSystemOptions = () => [
   {
-    P.value: "commonjs",
-    label: "CommonJS",
-    hint: "Use require syntax and .res.js extension",
-  },
-  {
-    value: RescriptVersions.esmModuleSystemName(versions),
+    P.value: "esmodule",
     label: "ES Modules",
     hint: "Use import syntax and .res.mjs extension",
+  },
+  {
+    value: "commonjs",
+    label: "CommonJS",
+    hint: "Use require syntax and .res.js extension",
   },
 ]
 
@@ -72,10 +72,10 @@ let addToExistingProject = async (~projectName) => {
 
   let moduleSystem = await P.select({
     message: "What module system will you use?",
-    options: getModuleSystemOptions(~versions),
+    options: getModuleSystemOptions(),
   })->P.resultOrRaise
 
-  let suffix = moduleSystem->ModuleSystem.getSuffix
+  let suffix = moduleSystem === "esmodule" ? ".res.mjs" : ".res.js"
 
   let shouldCheckJsFilesIntoGit = await P.confirm({
     message: `Do you want to check generated ${suffix} files into git?`,

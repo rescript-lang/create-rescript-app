@@ -2,21 +2,12 @@ open Node
 
 module P = ClackPrompts
 
-let rescriptVersionRange = `11.x.x || 12.x.x`
-let rescriptCoreVersionRange = ">=1.0.0"
+let rescriptVersionRange = `11.1.4 || 12.x.x`
+let finalRescriptCoreVersion = "1.6.1"
 let includesRewatchVersionRange = ">=12.0.0-alpha.15"
 let includesStdlibVersionRange = ">=12.0.0-beta.1"
 
 type versions = {rescriptVersion: string, rescriptCoreVersion: option<string>}
-
-let getCompatibleRescriptCoreVersions = (~rescriptVersion, ~rescriptCoreVersions) =>
-  if CompareVersions.compareVersions(rescriptVersion, "11.1.0")->Ordering.isLess {
-    rescriptCoreVersions->Array.filter(coreVersion =>
-      CompareVersions.compareVersions(coreVersion, "1.3.0")->Ordering.isLess
-    )
-  } else {
-    rescriptCoreVersions
-  }
 
 let spinnerMessage = "Loading available versions..."
 
@@ -25,14 +16,14 @@ let promptVersions = async () => {
 
   s->P.Spinner.start(spinnerMessage)
 
-  let (rescriptVersionsResult, rescriptCoreVersionsResult) = await Promise.all2((
-    NpmRegistry.getPackageVersions("rescript", rescriptVersionRange),
-    NpmRegistry.getPackageVersions("@rescript/core", rescriptCoreVersionRange),
-  ))
+  let rescriptVersionsResult = await NpmRegistry.getPackageVersions(
+    "rescript",
+    rescriptVersionRange,
+  )
 
-  switch (rescriptVersionsResult, rescriptCoreVersionsResult) {
-  | (Ok(_), Ok(_)) => s->P.Spinner.stop("Versions loaded.")
-  | _ => s->P.Spinner.stop(spinnerMessage)
+  switch rescriptVersionsResult {
+  | Ok(_) => s->P.Spinner.stop("Versions loaded.")
+  | Error(_) => s->P.Spinner.stop(spinnerMessage)
   }
 
   let rescriptVersion = switch rescriptVersionsResult {
@@ -40,8 +31,9 @@ let promptVersions = async () => {
   | Ok(rescriptVersions) =>
     let options = rescriptVersions->Array.map(v => {P.value: v})
 
-    let initialValue =
-      options->Array.find(o => o.value->String.startsWith("12."))->Option.map(o => o.value)
+    let initialValue = None
+    // Reactivate for v13 alpha -> first non-alpha/beta/rc version should be the default
+    // options->Array.find(o => o.value->String.startsWith("12."))->Option.map(o => o.value)
 
     let selectOptions = {ClackPrompts.message: "ReScript version?", options, ?initialValue}
 
@@ -49,28 +41,8 @@ let promptVersions = async () => {
   | Error(error) => error->NpmRegistry.getFetchErrorMessage->JsError.throwWithMessage
   }
 
-  let rescriptCoreVersions = switch rescriptCoreVersionsResult {
-  | Ok(versions) => versions
-  | Error(error) => error->NpmRegistry.getFetchErrorMessage->JsError.throwWithMessage
-  }
-
-  let rescriptCoreVersions = getCompatibleRescriptCoreVersions(
-    ~rescriptVersion,
-    ~rescriptCoreVersions,
-  )
-
   let includesStdlib = CompareVersions.satisfies(rescriptVersion, includesStdlibVersionRange)
-
-  let rescriptCoreVersion = switch rescriptCoreVersions {
-  | _ if includesStdlib => None
-  | [version] => Some(version)
-  | _ =>
-    let version = await P.select({
-      message: "ReScript Core version?",
-      options: rescriptCoreVersions->Array.map(v => {P.value: v}),
-    })->P.resultOrRaise
-    Some(version)
-  }
+  let rescriptCoreVersion = includesStdlib ? None : Some(finalRescriptCoreVersion)
 
   {rescriptVersion, rescriptCoreVersion}
 }
@@ -123,9 +95,6 @@ let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
     await removeNpmPackageLock()
   }
 }
-
-let esmModuleSystemName = ({rescriptVersion}) =>
-  CompareVersions.compareVersions(rescriptVersion, "11.1.0-rc.8") > 0. ? "esmodule" : "es6"
 
 let usesRewatch = ({rescriptVersion}) =>
   CompareVersions.satisfies(rescriptVersion, includesRewatchVersionRange)
