@@ -35,7 +35,6 @@ let getPackageManagerInfo = async () =>
     let filename = Path.parse(execPath).name->String.toLowerCase
 
     let packageManager = switch () {
-    | _ if filename->String.includes("npm") => Some(Npm)
     | _ if filename->String.includes("yarn") =>
       let versionResult = await Promisified.ChildProcess.exec(`${command} --version`)
       let version = versionResult.stdout->String.trim
@@ -43,6 +42,7 @@ let getPackageManagerInfo = async () =>
 
       Some(isYarn1 ? Yarn1 : YarnBerry)
     | _ if filename->String.includes("pnpm") => Some(Pnpm)
+    | _ if filename->String.includes("npm") => Some(Npm) // make sure this goes after pnpm ...
     | _ if filename->String.includes("bun") => Some(Bun)
     | _ => None
     }
