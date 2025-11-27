@@ -37,18 +37,15 @@ let updatePackageJson = async (~projectName, ~versions) =>
     }
   )
 
-let updateRescriptJson = async (~projectName, ~versions) =>
+let updateRescriptJson = async (~projectName, ~versions: RescriptVersions.versions) =>
   await JsonUtils.updateJsonFile("rescript.json", json =>
     switch json {
     | Object(config) =>
       config->Dict.set("name", String(projectName))
       switch config->Dict.get("package-specs") {
       | Some(Object(packageSpecs)) | Some(Array([Object(packageSpecs)])) =>
-        let moduleSystemName = versions->RescriptVersions.esmModuleSystemName
-        packageSpecs->Dict.set("module", String(moduleSystemName))
-
-        let suffix = moduleSystemName->ModuleSystem.getSuffix
-        config->Dict.set("suffix", String(suffix))
+        packageSpecs->Dict.set("module", String("esmodule"))
+        config->Dict.set("suffix", String(".res.mjs"))
       | _ => ()
       }
 
