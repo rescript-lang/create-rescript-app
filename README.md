@@ -15,7 +15,7 @@ yarn create rescript-app
 or
 
 ```sh
-pnpm create rescript-app
+pnpm create rescript-app@latest
 ```
 
 or
