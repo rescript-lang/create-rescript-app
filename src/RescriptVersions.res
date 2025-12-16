@@ -86,6 +86,11 @@ let installVersions = async ({rescriptVersion, rescriptCoreVersion}) => {
   switch packageManager {
   | YarnBerry => await ensureYarnNodeModulesLinker()
   | Pnpm =>
+    let pnpmWorkspacePath = Path.join2(Process.cwd(), "pnpm-workspace.yaml")
+    if !Fs.existsSync(pnpmWorkspacePath) {
+      await Fs.Promises.writeFile(pnpmWorkspacePath, `shamefullyHoist: true${Os.eol}`)
+    }
+
     let hasPackageLock = Path.join2(Process.cwd(), "package-lock.json")->Fs.existsSync
     if hasPackageLock {
       await execCommand("import") // import versions from package-lock.json
