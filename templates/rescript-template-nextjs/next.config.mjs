@@ -2,7 +2,10 @@ import fs from "fs";
 import path from "path";
 
 const rescript = JSON.parse(fs.readFileSync("./rescript.json"));
-const transpileModules = ["rescript"].concat(rescript["bs-dependencies"]);
+
+const transpilePackages = ["rescript"]
+  .concat(rescript["bs-dependencies"] ?? [])
+  .concat(rescript["dependencies"] ?? []);
 
 const config = {
   pageExtensions: ["jsx", "js"],
@@ -44,6 +47,6 @@ const config = {
 };
 
 export default {
-  transpilePackages: transpileModules,
+  transpilePackages,
   ...config,
 };
