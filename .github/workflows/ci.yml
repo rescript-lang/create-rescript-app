@@ -35,6 +35,10 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Publish preview package
+        if: github.event_name == 'pull_request'
+        run: npx pkg-pr-new publish --bin
+
       - name: Pack (includes rescript build)
         run: npm pack
 
