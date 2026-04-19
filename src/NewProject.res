@@ -6,13 +6,13 @@ let packageNameRegExp = /^[a-z0-9-]+$/
 
 let validateProjectName = projectName =>
   if projectName->String.trim->String.length === 0 {
-    Some("Project name must not be empty.")
+    Error("Project name must not be empty.")
   } else if !(packageNameRegExp->RegExp.test(projectName)) {
-    Some("Project name may only contain lower case letters, numbers and hyphens.")
+    Error("Project name may only contain lower case letters, numbers and hyphens.")
   } else if Fs.existsSync(Path.join2(Process.cwd(), projectName)) {
-    Some(`The folder ${projectName} already exist in the current directory.`)
+    Error(`The folder ${projectName} already exist in the current directory.`)
   } else {
-    None
+    Ok()
   }
 
 let updatePackageJson = async (~projectName, ~versions) =>
@@ -117,14 +117,23 @@ let createNewProject = async () => {
     let useDefaultVersions = Option.isSome(commandLineArguments.templateName)
 
     let projectName = switch commandLineArguments.projectName {
-    | Some(projectName) if useDefaultVersions => projectName->validateProjectName->Option.getOrThrow
+    | Some(projectName) if useDefaultVersions =>
+      // Note this throws in the some case, which is why we cannot use Option.getOrThrow here.
+      switch validateProjectName(projectName) {
+      | Error(message) => JsError.throwWithMessage(message)
+      | Ok() => projectName
+      }
 
     | initialValue =>
       await P.text({
         message: "What is the name of your new ReScript project?",
         placeholder: "my-rescript-app",
         ?initialValue,
-        validate: validateProjectName,
+        validate: projectName =>
+          switch validateProjectName(projectName) {
+          | Ok() => None
+          | Error(error) => Some(error)
+          },
       })->P.resultOrRaise
     }
 
