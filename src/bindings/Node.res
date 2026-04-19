@@ -63,6 +63,22 @@ module Process = {
   @scope("process") external exitWithCode: int => unit = "exit"
 }
 
+module Assert = {
+  @module("node:assert/strict")
+  external strictEqual: ('a, 'a) => unit = "strictEqual"
+
+  @module("node:assert/strict")
+  external fail: string => unit = "fail"
+}
+
+module Test = {
+  @module("node:test")
+  external describe: (string, unit => unit) => unit = "describe"
+
+  @module("node:test")
+  external test: (string, unit => unit) => unit = "test"
+}
+
 module Url = {
   type t
 

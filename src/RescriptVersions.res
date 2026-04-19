@@ -11,6 +11,42 @@ type versions = {rescriptVersion: string, rescriptCoreVersion: option<string>}
 
 let spinnerMessage = "Loading available versions..."
 
+let makeVersions = rescriptVersion => {
+  let includesStdlib = CompareVersions.satisfies(rescriptVersion, includesStdlibVersionRange)
+  let rescriptCoreVersion = includesStdlib ? None : Some(finalRescriptCoreVersion)
+
+  {rescriptVersion, rescriptCoreVersion}
+}
+
+let getDefaultVersions = async () => {
+  let s = P.spinner()
+
+  s->P.Spinner.start(spinnerMessage)
+
+  let rescriptVersionsResult = await NpmRegistry.getPackageVersions(
+    "rescript",
+    rescriptVersionRange,
+  )
+
+  switch rescriptVersionsResult {
+  | Ok(_) => s->P.Spinner.stop("Versions loaded.")
+  | Error(_) => s->P.Spinner.stop(spinnerMessage)
+  }
+
+  let rescriptVersion = switch rescriptVersionsResult {
+  | Ok([]) => JsError.throwWithMessage("No supported ReScript versions were found.")
+  | Ok([version]) => version
+  | Ok(rescriptVersions) =>
+    switch rescriptVersions->Array.find(version => !(version->String.includes("-"))) {
+    | Some(version) => version
+    | None => rescriptVersions[0]->Option.getOrThrow
+    }
+  | Error(error) => error->NpmRegistry.getFetchErrorMessage->JsError.throwWithMessage
+  }
+
+  makeVersions(rescriptVersion)
+}
+
 let promptVersions = async () => {
   let s = P.spinner()
 
@@ -41,10 +77,7 @@ let promptVersions = async () => {
   | Error(error) => error->NpmRegistry.getFetchErrorMessage->JsError.throwWithMessage
   }
 
-  let includesStdlib = CompareVersions.satisfies(rescriptVersion, includesStdlibVersionRange)
-  let rescriptCoreVersion = includesStdlib ? None : Some(finalRescriptCoreVersion)
-
-  {rescriptVersion, rescriptCoreVersion}
+  makeVersions(rescriptVersion)
 }
 
 let ensureYarnNodeModulesLinker = async () => {
