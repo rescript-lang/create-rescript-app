@@ -53,6 +53,17 @@ Test.describe("CommandLineArguments", () => {
     }
   })
 
+  Test.test("parses the template name from the --template flag for res-x", () => {
+    switch CommandLineArguments.parse(list{"my-app", "--template", "res-x"}) {
+    | Ok(commandLineArguments) =>
+      commandLineArguments->assertCommandLineArguments(
+        ~projectName=Some("my-app"),
+        ~templateName=Some(Templates.resXTemplateName),
+      )
+    | Error(message) => Assert.fail(message)
+    }
+  })
+
   Test.test("parses the template name from the --template=... flag", () => {
     switch CommandLineArguments.parse(list{"my-app", "--template=basic"}) {
     | Ok(commandLineArguments) =>
@@ -84,35 +95,35 @@ Test.describe("CommandLineArguments", () => {
   Test.test("rejects a missing template value", () => {
     assertParseError(
       ~remainingArguments=list{"my-app", "--template"},
-      ~message="Missing value for --template. Supported options: --template <vite|nextjs|basic> or -t <vite|nextjs|basic>.",
+      ~message="Missing value for --template. Supported options: --template <vite|nextjs|res-x|basic> or -t <vite|nextjs|res-x|basic>.",
     )
   })
 
   Test.test("rejects unknown options", () => {
     assertParseError(
       ~remainingArguments=list{"my-app", "--yes"},
-      ~message="Unknown option \"--yes\". Supported options: --template <vite|nextjs|basic> or -t <vite|nextjs|basic>.",
+      ~message="Unknown option \"--yes\". Supported options: --template <vite|nextjs|res-x|basic> or -t <vite|nextjs|res-x|basic>.",
     )
   })
 
   Test.test("rejects unknown templates", () => {
     assertParseError(
       ~remainingArguments=list{"my-app", "--template", "unknown"},
-      ~message="Unknown template \"unknown\". Available templates: vite, nextjs, basic.",
+      ~message="Unknown template \"unknown\". Available templates: vite, nextjs, res-x, basic.",
     )
   })
 
   Test.test("rejects positional templates", () => {
     assertParseError(
       ~remainingArguments=list{"my-app", "vite"},
-      ~message="Unexpected argument \"vite\". Supported options: --template <vite|nextjs|basic> or -t <vite|nextjs|basic>.",
+      ~message="Unexpected argument \"vite\". Supported options: --template <vite|nextjs|res-x|basic> or -t <vite|nextjs|res-x|basic>.",
     )
   })
 
   Test.test("rejects additional positional arguments after the template", () => {
     assertParseError(
       ~remainingArguments=list{"my-app", "-t", "vite", "extra"},
-      ~message="Unexpected argument \"extra\". Supported options: --template <vite|nextjs|basic> or -t <vite|nextjs|basic>.",
+      ~message="Unexpected argument \"extra\". Supported options: --template <vite|nextjs|res-x|basic> or -t <vite|nextjs|res-x|basic>.",
     )
   })
 })
