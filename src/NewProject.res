@@ -113,19 +113,33 @@ let createNewProject = async () => {
       ~versions={rescriptVersion: "11.1.1", rescriptCoreVersion: Some("1.5.0")},
     )
   } else {
-    let projectName = await P.text({
-      message: "What is the name of your new ReScript project?",
-      placeholder: "my-rescript-app",
-      initialValue: ?Process.argv[2],
-      validate: validateProjectName,
-    })->P.resultOrRaise
+    let commandLineArguments = CommandLineArguments.fromProcessArgv(Process.argv)->Result.getOrThrow
+    let useDefaultVersions = Option.isSome(commandLineArguments.templateName)
 
-    let templateName = await P.select({
-      message: "Select a template",
-      options: getTemplateOptions(),
-    })->P.resultOrRaise
+    let projectName = switch commandLineArguments.projectName {
+    | Some(projectName) if useDefaultVersions => projectName->validateProjectName->Option.getOrThrow
 
-    let versions = await RescriptVersions.promptVersions()
+    | initialValue =>
+      await P.text({
+        message: "What is the name of your new ReScript project?",
+        placeholder: "my-rescript-app",
+        ?initialValue,
+        validate: validateProjectName,
+      })->P.resultOrRaise
+    }
+
+    let templateName = switch commandLineArguments.templateName {
+    | Some(templateName) => templateName
+    | None =>
+      await P.select({
+        message: "Select a template",
+        options: getTemplateOptions(),
+      })->P.resultOrRaise
+    }
+
+    let versions = useDefaultVersions
+      ? await RescriptVersions.getDefaultVersions()
+      : await RescriptVersions.promptVersions()
 
     await createProject(~templateName, ~projectName, ~versions)
   }

@@ -32,6 +32,9 @@ jobs:
       - name: NPM install
         run: npm ci
 
+      - name: Run tests
+        run: npm test
+
       - name: Pack (includes rescript build)
         run: npm pack
 

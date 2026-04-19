@@ -8,6 +8,9 @@
 
 - Make sure to use modern ReScript and not Reason syntax! Read https://rescript-lang.org/llms/manual/llm-small.txt to learn the language syntax.
 - Formatting is enforced by `rescript format`; keep 2-space indentation and prefer pattern matching over chained conditionals.
+- Prefer `result` values over exceptions for expected failure paths; only raise or throw at clear integration boundaries where the surrounding API requires it.
+- Prefer pattern matching over `if`/`else` chains when branching on the shape or state of the same value; plain comparisons across different values are fine with `if`/`else`.
+- Do not run `rescript`, `npm test`, or `npm run prepack` in parallel; ReScript compiler artifacts are not safe for concurrent builds in this repo.
 - Module files are PascalCase (`Templates.res`), values/functions camelCase, types/variants PascalCase, and records snake_case fields only when matching external JSON.
 - Keep `.resi` signatures accurate and minimal; avoid exposing helpers that are template-specific.
 - When touching templates, mirror upstream defaults and keep package scripts consistent with the chosen toolchain.
@@ -31,11 +34,13 @@
 - **`npm start`** - Run CLI directly from source (`src/Main.res.mjs`) for interactive testing and development
 - **`npm run dev`** - Watch ReScript sources and rebuild automatically to `lib/` directory
 - **`npm run prepack`** - Compile ReScript and bundle with Rollup into `out/create-rescript-app.cjs` (production build)
+- **`npm test`** - Compile ReScript sources and run the Node.js regression tests
 - **`npm run format`** - Apply ReScript formatter across all source files
 
 ## Testing and Validation
 
-- **Manual Testing**: No automated test suite - perform smoke tests by running the CLI into a temp directory
+- **Automated Tests**: Run `npm test` for automated coverage of CLI parsing and related helpers
+- **Manual Testing**: Perform smoke tests by running the CLI into a temp directory
 - **Template Validation**: After changes, test each template type (basic/Next.js/Vite) to ensure templates bootstrap cleanly
 - **Build Verification**: Run `npm run prepack` to ensure the production bundle builds correctly
 

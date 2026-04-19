@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node src/Main.res.mjs",
     "prepack": "rescript && rollup -c",
+    "test": "rescript && node --test test/*Test.res.mjs",
     "format": "rescript format",
     "dev": "rescript -w"
   },
