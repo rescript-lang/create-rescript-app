@@ -7,9 +7,10 @@ type t = {
 let basicTemplateName = "rescript-template-basic"
 let viteTemplateName = "rescript-template-vite"
 let nextjsTemplateName = "rescript-template-nextjs"
+let resXTemplateName = "rescript-template-res-x"
 let templateNamePrefix = "rescript-template-"
 
-let supportedTemplateNames = ["vite", "nextjs", "basic"]
+let supportedTemplateNames = ["vite", "nextjs", "res-x", "basic"]
 
 let getTemplateName = templateName => {
   let templateName = templateName->String.toLowerCase
@@ -29,6 +30,11 @@ let templates = [
     name: nextjsTemplateName,
     displayName: "Next.js",
     shortDescription: "Next.js 15 with static export and Tailwind 3",
+  },
+  {
+    name: resXTemplateName,
+    displayName: "ResX",
+    shortDescription: "Bun SSR with ResX, Vite and Tailwind 4",
   },
   {
     name: basicTemplateName,

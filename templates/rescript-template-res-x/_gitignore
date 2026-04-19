@@ -1,0 +1,7 @@
+node_modules
+.env
+dist
+build
+lib
+.DS_Store
+src/**/*.res.mjs
