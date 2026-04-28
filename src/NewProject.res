@@ -80,11 +80,34 @@ let updateViteConfig = async () => {
 let newProjectMessage = "Create a new ReScript project"
 
 let getTemplateOptions = () =>
-  Templates.templates->Array.map(({name, displayName, shortDescription}) => {
+  Templates.templates->Array.map(({name, displayName, shortDescription, _}) => {
     P.value: name,
     label: displayName,
     hint: shortDescription,
   })
+
+let getVariantOptions = (variants: array<Templates.variant>) =>
+  variants->Array.map(({name, displayName, shortDescription}) => {
+    P.value: name,
+    label: displayName,
+    hint: shortDescription,
+  })
+
+let promptTemplateName = async () => {
+  let selectedName = await P.select({
+    message: "Select a template",
+    options: getTemplateOptions(),
+  })->P.resultOrRaise
+
+  switch Templates.templates->Array.find(template => template.name === selectedName) {
+  | Some({variants: Some(variants)}) =>
+    await P.select({
+      message: "Select a variant",
+      options: getVariantOptions(variants),
+    })->P.resultOrRaise
+  | _ => selectedName
+  }
+}
 
 let createProject = async (~templateName, ~projectName, ~versions) => {
   let templatePath = CraPaths.getTemplatePath(~templateName)
@@ -156,11 +179,7 @@ let createNewProject = async () => {
 
     let templateName = switch commandLineArguments.templateName {
     | Some(templateName) => templateName
-    | None =>
-      await P.select({
-        message: "Select a template",
-        options: getTemplateOptions(),
-      })->P.resultOrRaise
+    | None => await promptTemplateName()
     }
 
     let versions = useDefaultVersions

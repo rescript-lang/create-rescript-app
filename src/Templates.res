@@ -1,7 +1,14 @@
+type variant = {
+  name: string,
+  displayName: string,
+  shortDescription: string,
+}
+
 type t = {
   name: string,
   displayName: string,
   shortDescription: string,
+  variants: option<array<variant>>,
 }
 
 let basicTemplateName = "rescript-template-basic"
@@ -26,25 +33,35 @@ let templates = [
     name: viteTemplateName,
     displayName: "Vite",
     shortDescription: "Vite 8, React and Tailwind 4",
+    variants: None,
   },
   {
     name: nextjsTemplateName,
     displayName: "Next.js",
     shortDescription: "Next.js 15 with static export and Tailwind 3",
+    variants: None,
   },
   {
     name: xoteTemplateName,
     displayName: "Xote",
-    shortDescription: "Xote with Vite, signals and Tailwind 4 (CSR)",
-  },
-  {
-    name: xoteSsrTemplateName,
-    displayName: "Xote SSR",
-    shortDescription: "Xote with Vite, signals and Tailwind 4 (SSR)",
+    shortDescription: "Xote with Vite, signals and Tailwind 4",
+    variants: Some([
+      {
+        name: xoteTemplateName,
+        displayName: "Client-Side Rendering (CSR)",
+        shortDescription: "Vite, signals and Tailwind 4",
+      },
+      {
+        name: xoteSsrTemplateName,
+        displayName: "Server-Side Rendering (SSR)",
+        shortDescription: "Vite SSR via Node server, signals and Tailwind 4",
+      },
+    ]),
   },
   {
     name: basicTemplateName,
     displayName: "Basic",
     shortDescription: "Command line hello world app",
+    variants: None,
   },
 ]
