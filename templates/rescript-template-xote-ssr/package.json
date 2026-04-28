@@ -1,0 +1,25 @@
+{
+  "name": "rescript-template-xote-ssr",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "res:build": "rescript",
+    "res:clean": "rescript clean",
+    "res:dev": "rescript -w",
+    "dev": "node server.mjs",
+    "start": "NODE_ENV=production node server.mjs",
+    "build": "npm run build:client && npm run build:ssr",
+    "build:client": "vite build --outDir dist/client",
+    "build:ssr": "vite build --ssr src/Server.res.mjs --outDir dist/server"
+  },
+  "dependencies": {
+    "rescript-signals": "^3.1.0",
+    "xote": "^6.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "vite": "^7.0.0"
+  }
+}

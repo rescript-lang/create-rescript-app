@@ -1,0 +1,20 @@
+{
+  "name": "rescript-template-xote",
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    }
+  ],
+  "package-specs": {
+    "module": "esmodule",
+    "in-source": true
+  },
+  "suffix": ".res.mjs",
+  "dependencies": ["xote", "rescript-signals"],
+  "jsx": {
+    "version": 4,
+    "module": "XoteJSX"
+  },
+  "compiler-flags": ["-open Xote"]
+}

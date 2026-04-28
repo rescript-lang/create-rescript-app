@@ -1,0 +1,6 @@
+node_modules
+dist
+lib
+*.res.mjs
+*.res.js
+.DS_Store
