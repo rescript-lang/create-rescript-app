@@ -4,10 +4,11 @@
 
 This is a Vite-based template with following setup:
 
-- [ReScript](https://rescript-lang.org) 11.0 with @rescript/react, [Core](https://github.com/rescript-association/rescript-core) and JSX v4
+- [ReScript](https://rescript-lang.org) with JSX v4 and [@rescript/react](https://github.com/rescript-lang/rescript-react)
 - ES6 modules (ReScript code compiled to `.res.mjs` files)
-- Vite 6 with React Plugin (Fast Refresh)
-- Tailwind 4
+- [React](https://react.dev) 19 with React DOM
+- [Vite](https://vite.dev) 7 with [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react) 5
+- [Tailwind CSS](https://tailwindcss.com) 4 with [@tailwindcss/vite](https://tailwindcss.com/docs/installation/using-vite)
 
 ## Development
 
@@ -27,9 +28,11 @@ npm run dev
 
 ### Fast Refresh & ReScript
 
+This template configures Vite's React plugin to process generated `.res.mjs` files and ignores `.res` / `.resi` source changes so Fast Refresh waits for ReScript's generated JavaScript output.
+
 Make sure to create interface files (`.resi`) for each `*.res` file.
 
-Fast Refresh requires you to **only export React components**, and it's easy to unintenionally export other values that will disable Fast Refresh (you will see a message in the browser console whenever this happens).
+Fast Refresh requires you to **only export React components**, and it's easy to unintentionally export other values that will disable Fast Refresh (you will see a message in the browser console whenever this happens).
 
 ### Why are the generated `.res.mjs` files tracked in git?
 

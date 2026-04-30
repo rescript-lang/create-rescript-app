@@ -2,18 +2,26 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+const rescriptOutputSuffix = ".res.mjs";
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     tailwindcss(),
     react({
-      include: ["**/*.res.mjs"],
+      include: [`**/*${rescriptOutputSuffix}`],
     }),
   ],
   server: {
     watch: {
-      // We ignore ReScript build artifacts to avoid unnecessarily triggering HMR on incremental compilation
-      ignored: ["**/lib/bs/**", "**/lib/ocaml/**", "**/lib/rescript.lock"],
+      // Wait for ReScript's generated JS output before Vite sends HMR updates.
+      ignored: [
+        "**/*.res",
+        "**/*.resi",
+        "**/lib/bs/**",
+        "**/lib/ocaml/**",
+        "**/lib/rescript.lock",
+      ],
     },
   },
 });

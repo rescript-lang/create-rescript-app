@@ -61,6 +61,22 @@ let updateRescriptJson = async (~projectName, ~versions: RescriptVersions.versio
     }
   )
 
+let updateViteConfig = async () => {
+  if Fs.existsSync("vite.config.js") {
+    let rescriptConfig = await JsonUtils.readJsonFile("rescript.json")
+    let suffix = switch rescriptConfig->JsonUtils.getStringValue(~fieldName="suffix") {
+    | Some(suffix) => suffix
+    | None => ".res.mjs"
+    }
+
+    let viteConfig = await Fs.Promises.readFile("vite.config.js")
+    await Fs.Promises.writeFile(
+      "vite.config.js",
+      viteConfig->ViteTemplateUtils.stampOutputSuffix(~suffix),
+    )
+  }
+}
+
 let newProjectMessage = "Create a new ReScript project"
 
 let getTemplateOptions = () =>
@@ -86,6 +102,7 @@ let createProject = async (~templateName, ~projectName, ~versions) => {
   await Fs.Promises.rename("_gitignore", ".gitignore")
   await updatePackageJson(~projectName, ~versions)
   await updateRescriptJson(~projectName, ~versions)
+  await updateViteConfig()
 
   await RescriptVersions.installVersions(versions)
   let _ = await Promisified.ChildProcess.exec("git init")

@@ -1,31 +1,24 @@
-let removeRescriptCore = (config: Dict.t<JSON.t>) => {
-  // Remove @rescript/core from bs-dependencies if the version is not set.
-  switch config->Dict.get("bs-dependencies") {
+let removeArrayValue = (config: Dict.t<JSON.t>, ~fieldName, ~valueToRemove) => {
+  switch config->Dict.get(fieldName) {
   | Some(Array(dependencies)) => {
       let newDependencies = dependencies->Array.filter(dependency =>
         switch dependency {
-        | String("@rescript/core") => false
+        | String(value) if value === valueToRemove => false
         | _ => true
         }
       )
-      config->Dict.set("bs-dependencies", Array(newDependencies))
+      config->Dict.set(fieldName, Array(newDependencies))
     }
   | _ => ()
   }
+}
 
-  // Remove "-open RescriptCore" from bsc-flags if the version is not set.
-  switch config->Dict.get("bsc-flags") {
-  | Some(Array(flags)) => {
-      let newFlags = flags->Array.filter(flag =>
-        switch flag {
-        | String("-open RescriptCore") => false
-        | _ => true
-        }
-      )
-      config->Dict.set("bsc-flags", Array(newFlags))
-    }
-  | _ => ()
-  }
+let removeRescriptCore = (config: Dict.t<JSON.t>) => {
+  // Remove @rescript/core and its open flag if the selected ReScript version includes Core.
+  removeArrayValue(config, ~fieldName="bs-dependencies", ~valueToRemove="@rescript/core")
+  removeArrayValue(config, ~fieldName="dependencies", ~valueToRemove="@rescript/core")
+  removeArrayValue(config, ~fieldName="bsc-flags", ~valueToRemove="-open RescriptCore")
+  removeArrayValue(config, ~fieldName="compiler-flags", ~valueToRemove="-open RescriptCore")
 }
 
 let renameConfigKey = (config: Dict.t<JSON.t>, ~from, ~to) => {
