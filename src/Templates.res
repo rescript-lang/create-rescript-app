@@ -23,7 +23,7 @@ let templates = [
   {
     name: viteTemplateName,
     displayName: "Vite",
-    shortDescription: "Vite 7, React and Tailwind 4",
+    shortDescription: "Vite 8, React and Tailwind 4",
   },
   {
     name: nextjsTemplateName,
