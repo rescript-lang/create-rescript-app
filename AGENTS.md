@@ -41,6 +41,7 @@
 
 - **Automated Tests**: Run `npm test` for automated coverage of CLI parsing and related helpers
 - **Manual Testing**: Perform smoke tests by running the CLI into a temp directory
+- **CI Preview Testing**: To test a pkg.pr.new build from CI, run `npm exec --yes --package=https://pkg.pr.new/rescript-lang/create-rescript-app/create-rescript-app@<commit> -- create-rescript-app my-app --template vite` and replace `<commit>` with the SHA from the pkg.pr.new CI comment.
 - **Template Validation**: After changes, test each template type (basic/Next.js/Vite) to ensure templates bootstrap cleanly
 - **Build Verification**: Run `npm run prepack` to ensure the production bundle builds correctly
 

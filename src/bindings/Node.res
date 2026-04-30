@@ -1,6 +1,9 @@
 module Fs = {
   @module("node:fs") external existsSync: string => bool = "existsSync"
 
+  @module("node:fs")
+  external readFileSync: (string, @as(json`"utf8"`) _) => string = "readFileSync"
+
   module Promises = {
     @module("node:fs") @scope("promises")
     external readFile: (string, @as(json`"utf8"`) _) => promise<string> = "readFile"
@@ -77,6 +80,9 @@ module Test = {
 
   @module("node:test")
   external test: (string, unit => unit) => unit = "test"
+
+  @module("node:test")
+  external testAsync: (string, unit => promise<unit>) => unit = "test"
 }
 
 module Url = {
