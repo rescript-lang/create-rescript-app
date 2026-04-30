@@ -3,26 +3,11 @@ open Node
 module Vite = {
   type transformResult = {code: string}
 
-  type transformHook = {handler: (string, string) => promise<Nullable.t<transformResult>>}
-
-  type serverOptions = {hmr: bool}
-
-  type experimentalOptions = {bundledDev: bool}
-
-  type rec plugin = {
+  type plugin = {
     name: string,
-    configResolved: config => unit,
-    transform: transformHook,
-  }
-
-  and config = {
-    root: string,
-    base: string,
-    command: string,
-    isProduction: bool,
-    server: serverOptions,
-    plugins: array<plugin>,
-    experimental: experimentalOptions,
+    enforce: string,
+    resolveId: string => Nullable.t<string>,
+    load: string => Nullable.t<string>,
   }
 
   type reactOptions = {
@@ -32,6 +17,26 @@ module Vite = {
 
   @module("@vitejs/plugin-react")
   external react: reactOptions => array<plugin> = "default"
+
+  type serverOptions = {hmr: bool, middlewareMode: bool}
+
+  type config = {
+    root: string,
+    configFile: bool,
+    logLevel: string,
+    server: serverOptions,
+    plugins: array<plugin>,
+  }
+
+  type server
+
+  @module("vite") external createServer: config => promise<server> = "createServer"
+
+  @send
+  external transformRequest: (server, string) => promise<Nullable.t<transformResult>> =
+    "transformRequest"
+
+  @send external close: server => promise<unit> = "close"
 }
 
 let viteTemplatePath = "templates/rescript-template-vite"
@@ -50,6 +55,24 @@ let make = App;
 
 export { make }
 `
+
+let stubReactPlugin = {
+  Vite.name: "stub-react",
+  enforce: "pre",
+  resolveId: id =>
+    switch id {
+    | "react" => Nullable.Value("virtual:react")
+    | "react/jsx-runtime" => Nullable.Value("virtual:react-jsx-runtime")
+    | _ => Nullable.Undefined
+    },
+  load: id =>
+    switch id {
+    | "virtual:react" => Nullable.Value(`export const useState = init => [init(), () => {}];`)
+    | "virtual:react-jsx-runtime" =>
+      Nullable.Value(`export const jsx = () => null; export const jsxs = () => null;`)
+    | _ => Nullable.Undefined
+    },
+}
 
 let assertIncludes = (actual, substring, message) =>
   if !(actual->String.includes(substring)) {
@@ -102,30 +125,34 @@ let assertCoreRemoved = config => {
 
 Test.describe("Vite template Fast Refresh", () => {
   Test.testAsync("turns generated ReScript output into a React Refresh boundary", async () => {
-    let plugins = Vite.react({include_: ["**/*.res.mjs"]})
-    let reactBabelPlugin = plugins[0]->Option.getOrThrow
+    let tempDir = Path.join2(Process.cwd(), ".tmp-vite-fast-refresh-test")
+    let tempModulePath = Path.join2(tempDir, "App.res.mjs")
 
-    reactBabelPlugin.configResolved({
+    await Fs.Promises.rm(tempDir, ~options={recursive: true, force: true})
+    await Fs.Promises.mkdir(tempDir, ~options={recursive: true})
+    await Fs.Promises.writeFile(tempModulePath, generatedRescriptComponent)
+
+    let plugins = [stubReactPlugin, ...Vite.react({include_: ["**/*.res.mjs"]})]
+    let server = await Vite.createServer({
       root: Process.cwd(),
-      base: "/",
-      command: "serve",
-      isProduction: false,
+      configFile: false,
+      logLevel: "silent",
       server: {
         hmr: true,
+        middlewareMode: true,
       },
       plugins,
-      experimental: {
-        bundledDev: false,
-      },
     })
 
-    let transformed = switch await reactBabelPlugin.transform.handler(
-      generatedRescriptComponent,
-      "/project/src/App.res.mjs",
+    let transformed = switch await server->Vite.transformRequest(
+      "/.tmp-vite-fast-refresh-test/App.res.mjs",
     ) {
     | Nullable.Value({code}) => code
     | Nullable.Null | Nullable.Undefined => ""
     }
+
+    await server->Vite.close
+    await Fs.Promises.rm(tempDir, ~options={recursive: true, force: true})
 
     assertIncludes(
       transformed,

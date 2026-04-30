@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "repository": {
     "type": "git",
@@ -41,10 +41,10 @@
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-terser": "^0.4.4",
-    "@vitejs/plugin-react": "^5.0.2",
+    "@vitejs/plugin-react": "^6.0.1",
     "compare-versions": "^6.1.0",
     "rescript": "^12.0.0",
     "rollup": "^4.53.3",
-    "vite": "^7.1.0"
+    "vite": "^8.0.10"
   }
 }

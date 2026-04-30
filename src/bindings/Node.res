@@ -25,11 +25,18 @@ module Fs = {
     @module("node:fs") @scope("promises")
     external rename: (string, string) => promise<unit> = "rename"
 
+    type mkdirOptions = {recursive?: bool}
+
     @module("node:fs") @scope("promises")
-    external mkdir: string => promise<unit> = "mkdir"
+    external mkdir: (string, ~options: mkdirOptions=?) => promise<unit> = "mkdir"
 
     @module("node:fs") @scope("promises")
     external unlink: string => promise<unit> = "unlink"
+
+    type rmOptions = {recursive?: bool, force?: bool}
+
+    @module("node:fs") @scope("promises")
+    external rm: (string, ~options: rmOptions=?) => promise<unit> = "rm"
   }
 }
 

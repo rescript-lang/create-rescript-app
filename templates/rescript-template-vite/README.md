@@ -7,7 +7,7 @@ This is a Vite-based template with following setup:
 - [ReScript](https://rescript-lang.org) with JSX v4 and [@rescript/react](https://github.com/rescript-lang/rescript-react)
 - ES6 modules (ReScript code compiled to `.res.mjs` files)
 - [React](https://react.dev) 19 with React DOM
-- [Vite](https://vite.dev) 7 with [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react) 5
+- [Vite](https://vite.dev) 8 with [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react) 6
 - [Tailwind CSS](https://tailwindcss.com) 4 with [@tailwindcss/vite](https://tailwindcss.com/docs/installation/using-vite)
 
 ## Development
