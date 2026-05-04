@@ -8,7 +8,7 @@
     "res:clean": "rescript clean",
     "res:dev": "rescript -w",
     "dev": "node server.mjs",
-    "start": "NODE_ENV=production node server.mjs",
+    "start": "node server.mjs --production",
     "build": "npm run build:client && npm run build:ssr",
     "build:client": "vite build --outDir dist/client",
     "build:ssr": "vite build --ssr src/Server.res.mjs --outDir dist/server"
