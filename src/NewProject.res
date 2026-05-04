@@ -2,19 +2,6 @@ open Node
 
 module P = ClackPrompts
 
-let packageNameRegExp = /^[a-z0-9-]+$/
-
-let validateProjectName = projectName =>
-  if projectName->String.trim->String.length === 0 {
-    Error("Project name must not be empty.")
-  } else if !(packageNameRegExp->RegExp.test(projectName)) {
-    Error("Project name may only contain lower case letters, numbers and hyphens.")
-  } else if Fs.existsSync(Path.join2(Process.cwd(), projectName)) {
-    Error(`The folder ${projectName} already exist in the current directory.`)
-  } else {
-    Ok()
-  }
-
 let updatePackageJson = async (~projectName, ~versions) =>
   await JsonUtils.updateJsonFile("package.json", json =>
     switch json {
@@ -159,7 +146,7 @@ let createNewProject = async () => {
     let projectName = switch commandLineArguments.projectName {
     | Some(projectName) if useDefaultVersions =>
       // Note this throws in the some case, which is why we cannot use Option.getOrThrow here.
-      switch validateProjectName(projectName) {
+      switch NewProjectValidation.validateProjectName(projectName) {
       | Error(message) => JsError.throwWithMessage(message)
       | Ok() => projectName
       }
@@ -170,7 +157,7 @@ let createNewProject = async () => {
         placeholder: "my-rescript-app",
         ?initialValue,
         validate: projectName =>
-          switch validateProjectName(projectName) {
+          switch NewProjectValidation.validateProjectName(projectName) {
           | Ok() => None
           | Error(error) => Some(error)
           },
