@@ -144,10 +144,9 @@ Use:
 | React, Next.js, or another JSX framework is detected in package.json dependencies | `.gen.tsx` |
 | No JSX signal | `.gen.ts` |
 
-If we want to minimize behavior differences from ReScript's documented default,
-omit `generatedFileExtension` when no JSX signal is available and accept the
-compiler default of `.gen.tsx`. If we want the least surprising setup for
-non-React TypeScript projects, set `.gen.ts` explicitly.
+Set `.gen.ts` explicitly when no JSX signal is available. That differs from the
+documented genType default of `.gen.tsx`, but it is less surprising for existing
+non-React TypeScript projects.
 
 ## Fallback Rules
 
@@ -158,7 +157,9 @@ Fall back to the current manual module prompt when:
 - `module` is missing or unsupported.
 - `moduleResolution` is `classic`, unknown, or conflicts with the module mode.
 - The project is a mixed Node dual-format project that cannot be represented by
-  one ReScript project-level module setting.
+  one ReScript project-level module setting, such as a CommonJS package with
+  `.mts` inputs, an ESM package with `.cts` inputs, or included source files
+  under nested package.json files with a different `type`.
 - The project uses `module: "preserve"` and package contents suggest meaningful
   CommonJS-style exports that ReScript cannot preserve statement-by-statement.
 
