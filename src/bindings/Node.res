@@ -1,6 +1,8 @@
 module Fs = {
   @module("node:fs") external existsSync: string => bool = "existsSync"
 
+  @module("node:fs") external readdirSync: string => array<string> = "readdirSync"
+
   @module("node:fs")
   external readFileSync: (string, @as(json`"utf8"`) _) => string = "readFileSync"
 
@@ -14,7 +16,7 @@ module Fs = {
     @module("node:fs") @scope("promises")
     external appendFile: (string, string) => promise<unit> = "appendFile"
 
-    type cpOptions = {recursive?: bool}
+    type cpOptions = {recursive?: bool, force?: bool}
 
     @module("node:fs") @scope("promises")
     external copyFile: (string, string) => promise<unit> = "copyFile"
