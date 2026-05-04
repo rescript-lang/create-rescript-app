@@ -1,8 +1,18 @@
 module Fs = {
   @module("node:fs") external existsSync: string => bool = "existsSync"
 
+  @module("node:fs") external readdirSync: string => array<string> = "readdirSync"
+
   @module("node:fs")
   external readFileSync: (string, @as(json`"utf8"`) _) => string = "readFileSync"
+
+  type stats
+
+  @module("node:fs") external statSync: string => stats = "statSync"
+
+  module Stats = {
+    @send external isDirectory: stats => bool = "isDirectory"
+  }
 
   module Promises = {
     @module("node:fs") @scope("promises")
