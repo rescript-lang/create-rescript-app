@@ -25,7 +25,8 @@ let make = () => {
     <p className="text-center font-thin text-stone-400">
       {React.string("Learn more about ")}
       <a
-        href="https://rescript-lang.org/" target="_blank" className="text-blue-500 hover:underline">
+        href="https://rescript-lang.org/" target="_blank" className="text-blue-500 hover:underline"
+      >
         {React.string("ReScript")}
         {React.string(".")}
       </a>
