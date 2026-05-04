@@ -1,9 +1,6 @@
 open Node
 
 module P = ClackPrompts
-module StringPrototype = {
-  @send external replaceAll: (string, string, string) => string = "replaceAll"
-}
 
 let packageNameRegExp = /^[a-z0-9-]+$/
 let resxTemplatePlaceholderName = "resx-template"
@@ -118,7 +115,7 @@ let rec replaceFileContents = async (remainingFilePaths, ~replaceValue, ~withVal
   | list{} => ()
   | list{filePath, ...remainingFilePaths} =>
     let fileContents = await Fs.Promises.readFile(filePath)
-    let updatedFileContents = fileContents->StringPrototype.replaceAll(replaceValue, withValue)
+    let updatedFileContents = fileContents->String.replaceAll(replaceValue, withValue)
 
     await Fs.Promises.writeFile(filePath, updatedFileContents)
     await replaceFileContents(remainingFilePaths, ~replaceValue, ~withValue)
