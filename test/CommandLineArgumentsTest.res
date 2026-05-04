@@ -31,6 +31,14 @@ Test.describe("CommandLineArguments", () => {
     }
   })
 
+  Test.test("parses the current directory as a project name", () => {
+    switch CommandLineArguments.parse(list{"."}) {
+    | Ok(commandLineArguments) =>
+      commandLineArguments->assertCommandLineArguments(~projectName=Some("."), ~templateName=None)
+    | Error(message) => Assert.fail(message)
+    }
+  })
+
   Test.test("parses the template name from the -t flag", () => {
     switch CommandLineArguments.parse(list{"my-app", "-t", "vite"}) {
     | Ok(commandLineArguments) =>
