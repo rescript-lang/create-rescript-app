@@ -17,7 +17,8 @@ module Navigation = {
         <a
           className="px-3 font-bold"
           target="_blank"
-          href="https://github.com/rescript-lang/create-rescript-app/tree/master/templates/rescript-template-nextjs">
+          href="https://github.com/rescript-lang/create-rescript-app/tree/master/templates/rescript-template-nextjs"
+        >
           {React.string("Github")}
         </a>
       </div>
