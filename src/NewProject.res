@@ -3,6 +3,7 @@ open Node
 module P = ClackPrompts
 
 let packageNameRegExp = /^[a-z0-9-]+$/
+let resxTemplatePlaceholderName = "resx-template"
 
 let validateProjectName = projectName =>
   if projectName->String.trim->String.length === 0 {
@@ -109,6 +110,72 @@ let promptTemplateName = async () => {
   }
 }
 
+let rec replaceFileContents = async (remainingFilePaths, ~replaceValue, ~withValue) =>
+  switch remainingFilePaths {
+  | list{} => ()
+  | list{filePath, ...remainingFilePaths} =>
+    let fileContents = await Fs.Promises.readFile(filePath)
+    let updatedFileContents = fileContents->String.replaceAll(replaceValue, withValue)
+
+    await Fs.Promises.writeFile(filePath, updatedFileContents)
+    await replaceFileContents(remainingFilePaths, ~replaceValue, ~withValue)
+  }
+
+let synchronizeResxTemplateFiles = async (~projectName) =>
+  await replaceFileContents(
+    list{
+      "package.json",
+      "rescript.json",
+      "README.md",
+      "Dockerfile",
+      "bun.lock",
+      Path.join(["scripts", "build-sfe.mjs"]),
+      Path.join(["src", "data", "TemplateContent.res"]),
+    },
+    ~replaceValue=resxTemplatePlaceholderName,
+    ~withValue=projectName,
+  )
+
+let getPackageManagerName = (packageManager: PackageManagers.packageManager) =>
+  switch packageManager {
+  | Npm => "npm"
+  | Yarn1 | YarnBerry => "yarn"
+  | Pnpm => "pnpm"
+  | Bun => "bun"
+  }
+
+let showGetStartedNote = async (~templateName, ~projectName) => {
+  if templateName === Templates.resXTemplateName {
+    let packageManagerInfo = await PackageManagers.getPackageManagerInfo()
+
+    switch packageManagerInfo.packageManager {
+    | Bun =>
+      P.note(
+        ~title="Get started",
+        ~message=`cd ${projectName}
+
+bun run dev`,
+      )
+    | packageManager =>
+      P.note(
+        ~title="Bun recommended",
+        ~message=`This ResX template is Bun-centric. You created it with ${packageManager->getPackageManagerName}, but the generated project should use Bun.
+
+cd ${projectName}
+bun install
+bun run dev`,
+      )
+    }
+  } else {
+    P.note(
+      ~title="Get started",
+      ~message=`cd ${projectName}
+
+# See the project's README.md for more information.`,
+    )
+  }
+}
+
 let createProject = async (~templateName, ~projectName, ~versions) => {
   let templatePath = CraPaths.getTemplatePath(~templateName)
   let projectPath = Path.join2(Process.cwd(), projectName)
@@ -127,6 +194,10 @@ let createProject = async (~templateName, ~projectName, ~versions) => {
   await updateRescriptJson(~projectName, ~versions)
   await updateViteConfig()
 
+  if templateName === Templates.resXTemplateName {
+    await synchronizeResxTemplateFiles(~projectName)
+  }
+
   await RescriptVersions.installVersions(versions)
   let _ = await Promisified.ChildProcess.exec("git init")
 
@@ -134,12 +205,7 @@ let createProject = async (~templateName, ~projectName, ~versions) => {
     s->P.Spinner.stop("Project created.")
   }
 
-  P.note(
-    ~title="Get started",
-    ~message=`cd ${projectName}
-
-# See the project's README.md for more information.`,
-  )
+  await showGetStartedNote(~templateName, ~projectName)
 }
 
 let createNewProject = async () => {
@@ -153,7 +219,10 @@ let createNewProject = async () => {
       ~versions={rescriptVersion: "11.1.1", rescriptCoreVersion: Some("1.5.0")},
     )
   } else {
-    let commandLineArguments = CommandLineArguments.fromProcessArgv(Process.argv)->Result.getOrThrow
+    let commandLineArguments = switch CommandLineArguments.fromProcessArgv(Process.argv) {
+    | Ok(commandLineArguments) => commandLineArguments
+    | Error(message) => JsError.throwWithMessage(message)
+    }
     let useDefaultVersions = Option.isSome(commandLineArguments.templateName)
 
     let projectName = switch commandLineArguments.projectName {
