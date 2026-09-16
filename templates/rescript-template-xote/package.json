@@ -12,8 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "rescript-signals": "^3.1.0",
-    "xote": "^6.2.0"
+    "xote": "^7.1.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
