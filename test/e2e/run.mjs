@@ -43,6 +43,11 @@ class Suite {
       YARN_ENABLE_TELEMETRY: "0",
     };
     delete this.env.FORCE_COLOR;
+    // npm run test:e2e supplies npm's own identity. Let each package manager
+    // populate its identity afresh when it runs the launcher package script.
+    for (const name of ["npm_execpath", "npm_config_user_agent", "npm_node_execpath", "INIT_CWD"]) {
+      delete this.env[name];
+    }
     this.passed = 0;
   }
 
