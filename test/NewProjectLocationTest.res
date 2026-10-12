@@ -71,4 +71,50 @@ Test.describe("NewProjectLocation", () => {
     )
     await cleanupTestRoot()
   })
+
+  Test.testAsync("allows devcontainer-only project directories", async () => {
+    let projectPath = await resetTestRoot("my-app")
+    await Fs.Promises.mkdir(Path.join2(projectPath, ".devcontainer"))
+
+    NewProjectLocation.validateProjectName(~cwd=testRoot, "my-app")->assertValidationOk
+    NewProjectLocation.validateProjectName(~cwd=projectPath, ".")->assertValidationOk
+    NewProjectLocation.validateProjectName(~cwd=projectPath, "./")->assertValidationOk
+
+    await Fs.Promises.writeFile(Path.join2(projectPath, "README.md"), "")
+    NewProjectLocation.validateProjectName(~cwd=projectPath, ".")->assertValidationOk
+    await cleanupTestRoot()
+  })
+
+  Test.testAsync("rejects devcontainer directories with conflicting project files", async () => {
+    let projectPath = await resetTestRoot("my-app")
+    await Fs.Promises.mkdir(Path.join2(projectPath, ".devcontainer"))
+    await Fs.Promises.writeFile(Path.join2(projectPath, "package.json"), "{}")
+
+    NewProjectLocation.validateProjectName(~cwd=testRoot, "my-app")->assertValidationError(
+      "The folder my-app already exist in the current directory.",
+    )
+    NewProjectLocation.validateProjectName(~cwd=projectPath, ".")->assertValidationError(
+      currentDirectoryConflictMessage,
+    )
+    NewProjectLocation.validateProjectName(~cwd=projectPath, "./")->assertValidationError(
+      currentDirectoryConflictMessage,
+    )
+    await cleanupTestRoot()
+  })
+
+  Test.testAsync("rejects a .devcontainer file", async () => {
+    let projectPath = await resetTestRoot("my-app")
+    await Fs.Promises.writeFile(Path.join2(projectPath, ".devcontainer"), "")
+
+    NewProjectLocation.validateProjectName(~cwd=testRoot, "my-app")->assertValidationError(
+      "The folder my-app already exist in the current directory.",
+    )
+    NewProjectLocation.validateProjectName(~cwd=projectPath, ".")->assertValidationError(
+      currentDirectoryConflictMessage,
+    )
+    NewProjectLocation.validateProjectName(~cwd=projectPath, "./")->assertValidationError(
+      currentDirectoryConflictMessage,
+    )
+    await cleanupTestRoot()
+  })
 })

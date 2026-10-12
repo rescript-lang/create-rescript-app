@@ -2,6 +2,7 @@ open Node
 
 let currentDirectoryArgument = "."
 let packageNameRegExp = /^[a-z0-9-]+$/
+let devcontainerDirectoryName = ".devcontainer"
 
 let allowedCurrentDirectoryEntries = [
   ".git",
@@ -27,17 +28,38 @@ let getPackageName = (~cwd=Process.cwd(), projectName) =>
 let getProjectPath = (~cwd=Process.cwd(), projectName) =>
   isCurrentDirectoryProject(projectName) ? cwd : Path.join2(cwd, projectName)
 
-let isAllowedCurrentDirectoryEntry = entry => {
+let hasDevcontainerDirectory = projectPath =>
+  try {
+    Path.join2(projectPath, devcontainerDirectoryName)->Fs.statSync->Fs.Stats.isDirectory
+  } catch {
+  | Exn.Error(_) => false
+  }
+
+let containsOnlyDevcontainerDirectory = projectPath =>
+  try {
+    switch Fs.readdirSync(projectPath) {
+    | [entry] if entry === devcontainerDirectoryName => hasDevcontainerDirectory(projectPath)
+    | _ => false
+    }
+  } catch {
+  | Exn.Error(_) => false
+  }
+
+let isAllowedCurrentDirectoryEntry = (~cwd, entry) => {
   let normalizedEntry = entry->String.toLowerCase
 
-  allowedCurrentDirectoryEntries
-  ->Array.find(allowedEntry => allowedEntry === normalizedEntry)
-  ->Option.isSome
+  switch entry {
+  | ".devcontainer" => hasDevcontainerDirectory(cwd)
+  | _ =>
+    allowedCurrentDirectoryEntries
+    ->Array.find(allowedEntry => allowedEntry === normalizedEntry)
+    ->Option.isSome
+  }
 }
 
 let validateCurrentDirectory = cwd => {
   let disallowedEntries =
-    Fs.readdirSync(cwd)->Array.filter(entry => !(entry->isAllowedCurrentDirectoryEntry))
+    Fs.readdirSync(cwd)->Array.filter(entry => !isAllowedCurrentDirectoryEntry(~cwd, entry))
 
   switch disallowedEntries {
   | [] => Ok()
@@ -54,7 +76,10 @@ let validateProjectName = (~cwd=Process.cwd(), projectName) => {
     Error("Project name may only contain lower case letters, numbers and hyphens.")
   } else if isCurrentDirectoryProject(projectName) {
     validateCurrentDirectory(cwd)
-  } else if Fs.existsSync(getProjectPath(~cwd, projectName)) {
+  } else if (
+    Fs.existsSync(getProjectPath(~cwd, projectName)) &&
+    !(getProjectPath(~cwd, projectName)->containsOnlyDevcontainerDirectory)
+  ) {
     Error(`The folder ${projectName} already exist in the current directory.`)
   } else {
     Ok()
