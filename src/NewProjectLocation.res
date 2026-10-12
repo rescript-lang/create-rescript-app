@@ -15,7 +15,11 @@ let allowedCurrentDirectoryEntries = [
   "readme.md",
 ]
 
-let isCurrentDirectoryProject = projectName => projectName === currentDirectoryArgument
+let isCurrentDirectoryProject = projectName =>
+  switch projectName {
+  | "." | "./" => true
+  | _ => false
+  }
 
 let getPackageName = (~cwd=Process.cwd(), projectName) =>
   isCurrentDirectoryProject(projectName) ? Path.basename(cwd) : projectName

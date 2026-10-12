@@ -34,6 +34,11 @@ Test.describe("NewProjectLocation", () => {
     NewProjectLocation.getProjectPath(~cwd="/tmp/my-app", ".")->Assert.strictEqual("/tmp/my-app")
   })
 
+  Test.test("accepts a trailing slash on the current directory argument", () => {
+    NewProjectLocation.getPackageName(~cwd="/tmp/my-app", "./")->Assert.strictEqual("my-app")
+    NewProjectLocation.getProjectPath(~cwd="/tmp/my-app", "./")->Assert.strictEqual("/tmp/my-app")
+  })
+
   Test.testAsync("allows creating in a repository with README and license files", async () => {
     let projectPath = await resetTestRoot("my-app")
     await Fs.Promises.mkdir(Path.join2(projectPath, ".git"))
@@ -41,6 +46,7 @@ Test.describe("NewProjectLocation", () => {
     await Fs.Promises.writeFile(Path.join2(projectPath, "LICENSE"), "")
 
     NewProjectLocation.validateProjectName(~cwd=projectPath, ".")->assertValidationOk
+    NewProjectLocation.validateProjectName(~cwd=projectPath, "./")->assertValidationOk
     await cleanupTestRoot()
   })
 
@@ -49,6 +55,9 @@ Test.describe("NewProjectLocation", () => {
     await Fs.Promises.writeFile(Path.join2(projectPath, "src"), "")
 
     NewProjectLocation.validateProjectName(~cwd=projectPath, ".")->assertValidationError(
+      currentDirectoryConflictMessage,
+    )
+    NewProjectLocation.validateProjectName(~cwd=projectPath, "./")->assertValidationError(
       currentDirectoryConflictMessage,
     )
     await cleanupTestRoot()
