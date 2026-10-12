@@ -4,6 +4,21 @@ module P = ClackPrompts
 
 let resxTemplatePlaceholderName = "resx-template"
 
+let installGitignore = async () => {
+  let templateGitignorePath = "_gitignore"
+  let gitignorePath = ".gitignore"
+
+  if Fs.existsSync(templateGitignorePath) {
+    if Fs.existsSync(gitignorePath) {
+      let templateGitignore = await Fs.Promises.readFile(templateGitignorePath)
+      await Fs.Promises.appendFile(gitignorePath, `${Os.eol}${templateGitignore}`)
+      await Fs.Promises.rm(templateGitignorePath, ~options={force: true})
+    } else {
+      await Fs.Promises.rename(templateGitignorePath, gitignorePath)
+    }
+  }
+}
+
 let updatePackageJson = async (~projectName, ~versions) =>
   await JsonUtils.updateJsonFile("package.json", json =>
     switch json {
@@ -132,41 +147,40 @@ let getPackageManagerName = (packageManager: PackageManagers.packageManager) =>
   | Bun => "bun"
   }
 
-let showGetStartedNote = async (~templateName, ~projectName) => {
+let showGetStartedNote = async (~templateName, ~projectName, ~createInCurrentDirectory) => {
+  let changeDirectoryCommand = createInCurrentDirectory
+    ? ""
+    : `cd ${projectName}
+
+`
+
   if templateName === Templates.resXTemplateName {
     let packageManagerInfo = await PackageManagers.getPackageManagerInfo()
 
     switch packageManagerInfo.packageManager {
-    | Bun =>
-      P.note(
-        ~title="Get started",
-        ~message=`cd ${projectName}
-
-bun run dev`,
-      )
+    | Bun => P.note(~title="Get started", ~message=`${changeDirectoryCommand}bun run dev`)
     | packageManager =>
       P.note(
         ~title="Bun recommended",
         ~message=`This ResX template is Bun-centric. You created it with ${packageManager->getPackageManagerName}, but the generated project should use Bun.
 
-cd ${projectName}
-bun install
+${changeDirectoryCommand}bun install
 bun run dev`,
       )
     }
   } else {
     P.note(
       ~title="Get started",
-      ~message=`cd ${projectName}
-
-# See the project's README.md for more information.`,
+      ~message=`${changeDirectoryCommand}# See the project's README.md for more information.`,
     )
   }
 }
 
 let createProject = async (~templateName, ~projectName, ~versions) => {
   let templatePath = CraPaths.getTemplatePath(~templateName)
-  let projectPath = Path.join2(Process.cwd(), projectName)
+  let packageName = NewProjectLocation.getPackageName(projectName)
+  let projectPath = NewProjectLocation.getProjectPath(projectName)
+  let createInCurrentDirectory = NewProjectLocation.isCurrentDirectoryProject(projectName)
 
   let s = P.spinner()
 
@@ -174,16 +188,21 @@ let createProject = async (~templateName, ~projectName, ~versions) => {
     s->P.Spinner.start("Creating project...")
   }
 
-  await Fs.Promises.cp(templatePath, projectPath, ~options={recursive: true})
+  if createInCurrentDirectory {
+    await Fs.Promises.cp(templatePath, projectPath, ~options={recursive: true, force: false})
+  } else {
+    await Fs.Promises.cp(templatePath, projectPath, ~options={recursive: true})
+  }
+
   Process.chdir(projectPath)
 
-  await Fs.Promises.rename("_gitignore", ".gitignore")
-  await updatePackageJson(~projectName, ~versions)
-  await updateRescriptJson(~projectName, ~versions)
+  await installGitignore()
+  await updatePackageJson(~projectName=packageName, ~versions)
+  await updateRescriptJson(~projectName=packageName, ~versions)
   await updateViteConfig()
 
   if templateName === Templates.resXTemplateName {
-    await synchronizeResxTemplateFiles(~projectName)
+    await synchronizeResxTemplateFiles(~projectName=packageName)
   }
 
   await RescriptVersions.installVersions(versions)
@@ -193,7 +212,7 @@ let createProject = async (~templateName, ~projectName, ~versions) => {
     s->P.Spinner.stop("Project created.")
   }
 
-  await showGetStartedNote(~templateName, ~projectName)
+  await showGetStartedNote(~templateName, ~projectName, ~createInCurrentDirectory)
 }
 
 let createNewProject = async () => {
@@ -216,7 +235,7 @@ let createNewProject = async () => {
     let projectName = switch commandLineArguments.projectName {
     | Some(projectName) if useDefaultVersions =>
       // Note this throws in the some case, which is why we cannot use Option.getOrThrow here.
-      switch NewProjectValidation.validateProjectName(projectName) {
+      switch NewProjectLocation.validateProjectName(projectName) {
       | Error(message) => JsError.throwWithMessage(message)
       | Ok() => projectName
       }
@@ -227,7 +246,7 @@ let createNewProject = async () => {
         placeholder: "my-rescript-app",
         ?initialValue,
         validate: projectName =>
-          switch NewProjectValidation.validateProjectName(projectName) {
+          switch NewProjectLocation.validateProjectName(projectName) {
           | Ok() => None
           | Error(error) => Some(error)
           },

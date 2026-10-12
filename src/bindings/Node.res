@@ -24,7 +24,7 @@ module Fs = {
     @module("node:fs") @scope("promises")
     external appendFile: (string, string) => promise<unit> = "appendFile"
 
-    type cpOptions = {recursive?: bool}
+    type cpOptions = {recursive?: bool, force?: bool}
 
     @module("node:fs") @scope("promises")
     external copyFile: (string, string) => promise<unit> = "copyFile"
