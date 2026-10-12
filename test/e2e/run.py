@@ -297,7 +297,8 @@ class Suite:
                 f'import {{answer}} from "./Interop.gen.{extension}";\nconst value: number = answer;\n'
             )
         self.verify_project(directory, suffix, legacy=not typescript)
-        check(self.run([self.command, "run", "test"], directory).strip().endswith("true"),
+        output = self.run([self.command, "run", "test"], directory)
+        check("true" in output.splitlines(),
               "Existing JavaScript program no longer runs")
         if typescript:
             check((directory / "src/Interop.gen.ts").is_file(), "genType did not generate TypeScript")
