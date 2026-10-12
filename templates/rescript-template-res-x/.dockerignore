@@ -1,0 +1,12 @@
+node_modules
+.git
+dist
+build
+lib
+.playwright-cli
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+AGENTS.md
