@@ -11,6 +11,7 @@ module Spinner = {
 module Log = {
   @module("@clack/prompts") @scope("log") external message: string => unit = "message"
   @module("@clack/prompts") @scope("log") external info: string => unit = "info"
+  @module("@clack/prompts") @scope("log") external warn: string => unit = "warn"
   @module("@clack/prompts") @scope("log") external error: string => unit = "error"
 }
 
