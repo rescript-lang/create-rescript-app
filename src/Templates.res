@@ -16,9 +16,10 @@ let viteTemplateName = "rescript-template-vite"
 let nextjsTemplateName = "rescript-template-nextjs"
 let xoteTemplateName = "rescript-template-xote"
 let xoteSsrTemplateName = "rescript-template-xote-ssr"
+let resXTemplateName = "rescript-template-res-x"
 let templateNamePrefix = "rescript-template-"
 
-let supportedTemplateNames = ["vite", "nextjs", "xote", "xote-ssr", "basic"]
+let supportedTemplateNames = ["vite", "nextjs", "xote", "xote-ssr", "res-x", "basic"]
 
 let getTemplateName = templateName => {
   let templateName = templateName->String.toLowerCase
@@ -57,6 +58,12 @@ let templates = [
         shortDescription: "Vite SSR via Node server, signals and Tailwind 4",
       },
     ]),
+  },
+  {
+    name: resXTemplateName,
+    displayName: "ResX",
+    shortDescription: "Bun SSR with ResX, Vite and Tailwind 4",
+    variants: None,
   },
   {
     name: basicTemplateName,

@@ -1,0 +1,26 @@
+{
+  "name": "resx-template",
+  "jsx": {
+    "module": "Hjsx"
+  },
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    }
+  ],
+  "package-specs": {
+    "module": "esmodule",
+    "in-source": true
+  },
+  "suffix": ".res.mjs",
+  "dependencies": [
+    "rescript-x",
+    "rescript-bun"
+  ],
+  "compiler-flags": [
+    "-open RescriptBun",
+    "-open RescriptBun.Globals",
+    "-open ResX.Globals"
+  ]
+}

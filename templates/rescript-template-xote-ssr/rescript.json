@@ -16,5 +16,6 @@
     "version": 4,
     "module": "XoteJSX"
   },
+  "ppx-flags": ["xote/ppx/ppx"],
   "compiler-flags": ["-open Xote"]
 }
