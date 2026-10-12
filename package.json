@@ -7,6 +7,7 @@
     "start": "node src/Main.res.mjs",
     "prepack": "rescript && rollup -c",
     "test": "rescript && node --test test/*Test.res.mjs test/*Test.mjs",
+    "test:e2e": "node test/e2e/run.mjs",
     "format": "rescript format",
     "dev": "rescript -w"
   },

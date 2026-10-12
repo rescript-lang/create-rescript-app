@@ -13,22 +13,22 @@ The npm job also covers existing ESM projects, NodeNext and bundler TypeScript
 projects (including compiling a genType consumer), devcontainer-only directories,
 `.` and `./`, and rejection of an occupied target without modifying its files.
 
-The harness uses Python's standard-library pseudo-terminal support to answer the
-real interactive prompts. It sets `CI=false` for the CLI so the old hardcoded CI
+The harness uses Node.js built-ins and Ubuntu's `script` utility (from util-linux)
+to answer the real interactive prompts through a pseudo-terminal. It sets
+`CI=false` for the CLI so the old hardcoded CI
 smoke-test path cannot bypass the scenario being tested. A launcher package script
 supplies the chosen manager's actual environment for package-manager detection.
 Each case uses an isolated temporary directory, including spaces in its path.
 Commands have timeouts, and failed CI jobs upload terminal and command logs.
 
-To reproduce a matrix entry on a POSIX host with Python 3, Node and the chosen
+To reproduce a matrix entry on Linux with Node, util-linux and the chosen
 package manager installed:
 
 ```sh
 npm pack
-python3 test/e2e/run.py --package create-rescript-app-1.12.1.tgz --manager npm --logs /tmp/cra-e2e-logs
+npm run test:e2e -- --package create-rescript-app-1.12.1.tgz --manager npm --logs /tmp/cra-e2e-logs
 ```
 
-The suite runs on the host operating system. CI provides Linux coverage; running
-it directly on macOS provides macOS coverage. The other package-manager names are
+The terminal runner currently targets Linux, matching CI. The other package-manager names are
 `pnpm`, `yarn-classic`, `yarn-berry` and `bun`; install the pinned version from the
 workflow when reproducing a particular job.

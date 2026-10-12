@@ -147,7 +147,7 @@ jobs:
           PACKAGE: ${{ needs.build.outputs.artifact_filename }}
           MANAGER: ${{ matrix.manager }}
         run: >-
-          python3 test/e2e/run.py
+          npm run test:e2e --
           --package "$PACKAGE"
           --manager "$MANAGER"
           --logs "$RUNNER_TEMP/cra-e2e-logs"
