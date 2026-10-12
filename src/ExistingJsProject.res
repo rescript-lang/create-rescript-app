@@ -8,15 +8,6 @@ type projectModuleConfig = {
   gentypeConfig: option<TsConfigMapping.inferredConfig>,
 }
 
-let getOrCreateJsonObject = (config: Dict.t<JSON.t>, ~fieldName) =>
-  switch config->Dict.get(fieldName) {
-  | Some(Object(object)) => object
-  | _ =>
-    let object = Dict.make()
-    config->Dict.set(fieldName, Object(object))
-    object
-  }
-
 let updatePackageJson = async (~versions) =>
   await JsonUtils.updateJsonFile("package.json", json =>
     switch json {
@@ -202,23 +193,7 @@ let getProjectModuleConfig = async packageJson =>
   }
 
 let updateTsConfig = async (~setAllowJs, ~setAllowImportingTsExtensions) =>
-  if setAllowJs || setAllowImportingTsExtensions {
-    await JsonUtils.updateJsonFile("tsconfig.json", json =>
-      switch json {
-      | Object(config) =>
-        let compilerOptions = config->getOrCreateJsonObject(~fieldName="compilerOptions")
-
-        if setAllowJs {
-          compilerOptions->Dict.set("allowJs", Boolean(true))
-        }
-
-        if setAllowImportingTsExtensions {
-          compilerOptions->Dict.set("allowImportingTsExtensions", Boolean(true))
-        }
-      | _ => ()
-      }
-    )
-  }
+  await TsConfigMapping.update(Process.cwd(), setAllowJs, setAllowImportingTsExtensions)
 
 let promptTsConfigUpdates = async (gentypeConfig: option<TsConfigMapping.inferredConfig>) => {
   switch gentypeConfig {

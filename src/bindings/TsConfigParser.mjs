@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { applyEdits, modify, parse, printParseErrorCode } from "jsonc-parser";
 
 const baseResult = {
   status: "not_found",
@@ -47,7 +48,15 @@ function hasNestedPackageType(projectPath, fileNames, rootPackageType) {
   for (const fileName of fileNames) {
     let currentDirectory = path.dirname(fileName);
 
-    while (currentDirectory.startsWith(projectPath) && currentDirectory !== projectPath) {
+    while (currentDirectory !== projectPath) {
+      const relative = path.relative(projectPath, currentDirectory);
+      if (
+        relative === ".." ||
+        relative.startsWith(`..${path.sep}`) ||
+        path.isAbsolute(relative)
+      ) {
+        break;
+      }
       const packageJsonPath = path.join(currentDirectory, "package.json");
       const packageType = readPackageType(packageJsonPath);
 
@@ -66,6 +75,49 @@ function hasNestedPackageType(projectPath, fileNames, rootPackageType) {
   return false;
 }
 
+export async function update(
+  projectPath,
+  setAllowJs,
+  setAllowImportingTsExtensions,
+) {
+  if (!setAllowJs && !setAllowImportingTsExtensions) {
+    return;
+  }
+
+  const tsconfigPath = path.join(projectPath, "tsconfig.json");
+  let contents = await fs.promises.readFile(tsconfigPath, "utf8");
+  const errors = [];
+  const config = parse(contents, errors, { allowTrailingComma: true });
+  if (errors.length > 0) {
+    throw new Error(
+      `Could not parse tsconfig.json: ${printParseErrorCode(errors[0].error)}`,
+    );
+  }
+  if (config === null || typeof config !== "object" || Array.isArray(config)) {
+    throw new Error("tsconfig.json must contain an object.");
+  }
+
+  const formattingOptions = {
+    insertSpaces: true,
+    tabSize: 2,
+    eol: contents.includes("\r\n") ? "\r\n" : "\n",
+  };
+  for (const [option, enabled] of [
+    ["allowJs", setAllowJs],
+    ["allowImportingTsExtensions", setAllowImportingTsExtensions],
+  ]) {
+    if (enabled) {
+      contents = applyEdits(
+        contents,
+        modify(contents, ["compilerOptions", option], true, {
+          formattingOptions,
+        }),
+      );
+    }
+  }
+  await fs.promises.writeFile(tsconfigPath, contents);
+}
+
 export function read(projectPath) {
   const tsconfigPath = path.join(projectPath, "tsconfig.json");
 
@@ -75,7 +127,9 @@ export function read(projectPath) {
 
   let ts;
   try {
-    const requireFromProject = createRequire(path.join(projectPath, "package.json"));
+    const requireFromProject = createRequire(
+      path.join(projectPath, "package.json"),
+    );
     ts = requireFromProject("typescript");
   } catch (_error) {
     return {
@@ -109,26 +163,37 @@ export function read(projectPath) {
       ...baseResult,
       status: "error",
       tsconfigPath,
-      message: parsed.errors.map(error => formatDiagnostic(ts, error)).join("\n"),
+      message: parsed.errors
+        .map((error) => formatDiagnostic(ts, error))
+        .join("\n"),
     };
   }
 
   const options = parsed.options;
   const fileNames = parsed.fileNames ?? [];
-  const rootPackageType = readPackageType(path.join(projectPath, "package.json"));
+  const rootPackageType = readPackageType(
+    path.join(projectPath, "package.json"),
+  );
 
   return {
     status: "found",
     tsconfigPath,
     module: getEnumName(ts.ModuleKind, options.module),
-    moduleResolution: getEnumName(ts.ModuleResolutionKind, options.moduleResolution),
+    moduleResolution: getEnumName(
+      ts.ModuleResolutionKind,
+      options.moduleResolution,
+    ),
     allowJs: options.allowJs === true,
     allowImportingTsExtensions: options.allowImportingTsExtensions === true,
     noEmit: options.noEmit === true,
     emitDeclarationOnly: options.emitDeclarationOnly === true,
     jsx: getEnumName(ts.JsxEmit, options.jsx),
-    hasMts: fileNames.some(fileName => fileName.endsWith(".mts")),
-    hasCts: fileNames.some(fileName => fileName.endsWith(".cts")),
-    hasNestedPackageType: hasNestedPackageType(projectPath, fileNames, rootPackageType),
+    hasMts: fileNames.some((fileName) => fileName.endsWith(".mts")),
+    hasCts: fileNames.some((fileName) => fileName.endsWith(".cts")),
+    hasNestedPackageType: hasNestedPackageType(
+      projectPath,
+      fileNames,
+      rootPackageType,
+    ),
   };
 }

@@ -29,6 +29,9 @@ type inferredConfig = {
 @module("./bindings/TsConfigParser.mjs")
 external read: string => parsedConfig = "read"
 
+@module("./bindings/TsConfigParser.mjs")
+external update: (string, bool, bool) => promise<unit> = "update"
+
 let esmodule = "esmodule"
 let commonjs = "commonjs"
 let suffix = ".res.js"
