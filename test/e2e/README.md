@@ -4,8 +4,8 @@ The `e2e` job in `.github/workflows/ci.yml` tests the CLI tarball produced by th
 build job on Ubuntu with Node 20.19.0, the minimum supported version.
 
 Each package manager (npm, pnpm, Yarn Classic, Yarn Berry, Bun) creates a basic
-project with the current ReScript 12 default and adds ReScript 11.1.4 to an
-existing CommonJS project. Both projects install real dependencies, compile
+project and adds ReScript to an existing CommonJS project using the current
+ReScript 12 release. Both projects install real dependencies, compile
 ReScript and execute the generated program. Existing scripts, dependencies and
 source files must survive, and the expected package manager lockfile must exist.
 

@@ -178,7 +178,7 @@ class Suite:
         self.passed += 1
         print(f"PASS {self.manager}: {name}", flush=True)
 
-    def verify_project(self, directory, suffix, legacy=False):
+    def verify_project(self, directory, suffix):
         package = json.loads((directory / "package.json").read_text())
         config = json.loads((directory / "rescript.json").read_text())
         check(config["name"] == package["name"], "Project and package names differ")
@@ -190,11 +190,9 @@ class Suite:
             check("nodeLinker: node-modules" in (directory / ".yarnrc.yml").read_text(),
                   "Yarn Berry node-modules linker was not configured")
         installed = json.loads((directory / "node_modules/rescript/package.json").read_text())["version"]
-        if legacy:
-            check(installed == "11.1.4", f"Expected ReScript 11.1.4, installed {installed}")
-            check("@rescript/core" in package["dependencies"], "Missing ReScript 11 core dependency")
-        else:
-            check(installed.startswith("12."), f"Expected a current ReScript 12 version, installed {installed}")
+        check(installed.startswith("12."), f"Expected a current ReScript 12 version, installed {installed}")
+        check("@rescript/core" not in package.get("dependencies", {}),
+              "ReScript 12 should use its bundled standard library")
         self.run([self.command, "run", "res:build"], directory)
         output = self.run(["node", f"src/Demo{suffix}"], directory)
         check(output.strip() == "Hello, world!", f"Unexpected generated program output: {output}")
@@ -256,9 +254,7 @@ class Suite:
         self.run([self.command, "install"], directory)
         prompts = [
             ("Do you want to add ReScript", "y"),
-            # The reversed registry list ends with the sole supported v11
-            # release. Arrow-up wraps to it; assert the installed version below.
-            ("ReScript version?", "\r" if typescript else "\x1b[A\r"),
+            ("ReScript version?", "\r"),
             ("Where will you put your ReScript source files?", "\r"),
         ]
         if typescript:
@@ -296,7 +292,7 @@ class Suite:
             (directory / "src/consumer.ts").write_text(
                 f'import {{answer}} from "./Interop.gen.{extension}";\nconst value: number = answer;\n'
             )
-        self.verify_project(directory, suffix, legacy=not typescript)
+        self.verify_project(directory, suffix)
         output = self.run([self.command, "run", "test"], directory)
         check("true" in output.splitlines(),
               "Existing JavaScript program no longer runs")
