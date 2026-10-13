@@ -87,7 +87,15 @@ module Process = {
   @scope("process") external env: Dict.t<string> = "env"
   @scope("process") external platform: string = "platform"
   @scope("process") external execPath: string = "execPath"
-  @scope("process") external kill: (int, string) => unit = "kill"
+  @scope("process") external killUnsafe: (int, string) => unit = "kill"
+
+  let kill = (pid, signal) =>
+    try {
+      killUnsafe(pid, signal)
+      Ok()
+    } catch {
+    | JsExn(error) => Error(#SignalError(error))
+    }
 
   type state = {mutable exitCode: int}
   @val external state: state = "process"
@@ -121,6 +129,10 @@ module Test = {
 
   @module("node:test")
   external testAsync: (string, unit => promise<unit>) => unit = "test"
+
+  type options = {skip: bool}
+  @module("node:test")
+  external testAsyncWithOptions: (string, options, unit => promise<unit>) => unit = "test"
 }
 
 module Url = {
@@ -156,7 +168,12 @@ module ChildProcess = {
   type t
   type options = {cwd: string, env: Dict.t<string>, detached: bool, stdio: array<string>}
 
-  @module("node:child_process") external spawn: (string, array<string>, options) => t = "spawn"
+  @module("node:child_process")
+  external spawnUnsafe: (string, array<string>, options) => t = "spawn"
+  let spawn = (command, args, options) =>
+    try Ok(spawnUnsafe(command, args, options)) catch {
+    | JsExn(error) => Error(#SpawnError(error))
+    }
   @get external pid: t => option<int> = "pid"
   @get external stdout: t => readable = "stdout"
   @get external stderr: t => readable = "stderr"
@@ -168,13 +185,30 @@ module ChildProcess = {
   @send
   external onClose: (t, @as("close") _, (Nullable.t<int>, Nullable.t<string>) => unit) => unit =
     "once"
-  @send external write: (writable, string) => unit = "write"
+  @send external writeUnsafe: (writable, string) => unit = "write"
+  let write = (stream, text) =>
+    try {
+      writeUnsafe(stream, text)
+      Ok()
+    } catch {
+    | JsExn(error) => Error(#InputError(error))
+    }
   @send external destroyInput: writable => unit = "destroy"
 
   type syncOptions = {cwd: string, stdio: string}
   type syncResult = {status: Nullable.t<int>, error?: JsExn.t}
   @module("node:child_process")
-  external spawnSync: (string, array<string>, syncOptions) => syncResult = "spawnSync"
+  external spawnSyncUnsafe: (string, array<string>, syncOptions) => syncResult = "spawnSync"
+  let spawnSync = (command, args, options) =>
+    try {
+      let result = spawnSyncUnsafe(command, args, options)
+      switch result.error {
+      | Some(error) => Error(#SpawnError(error))
+      | None => Ok(result)
+      }
+    } catch {
+    | JsExn(error) => Error(#SpawnError(error))
+    }
 }
 
 @get external errorCode: JsExn.t => option<string> = "code"

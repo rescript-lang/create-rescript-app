@@ -66,13 +66,14 @@ let verifyProject = async (context: P.context, directory, suffix) => {
     )
   | _ => Assert.fail("Expected package dependencies")
   }
-  let _ = await P.run(context, [context.info.command, "run", "res:build"], directory)
-  let output = await P.run(context, ["node", `src/Demo${suffix}`], directory)
+  let? Ok(_) = await P.run(context, [context.info.command, "run", "res:build"], directory)
+  let? Ok(output) = await P.run(context, ["node", `src/Demo${suffix}`], directory)
   Assert.strictEqual(
     output->String.trim,
     "Hello, world!",
     ~message="Unexpected generated program output",
   )
+  Ok()
 }
 
 let verifyPreserved = (directory, preserved) =>
@@ -102,7 +103,13 @@ let newProject = async (context, directory, ~target, ~devcontainer) => {
   preserved->Array.forEach(((path, contents)) =>
     Fs.writeFileSync(Path.join2(project, path), contents)
   )
-  await P.cli(context, directory, ~args=[target, "--template", "basic"], ~expected=0, ~prompts=[])
+  let? Ok() = await P.cli(
+    context,
+    directory,
+    ~args=[target, "--template", "basic"],
+    ~expected=0,
+    ~prompts=[],
+  )
   Assert.strictEqual(
     P.readJson(Path.join2(project, "package.json"))->stringField("name"),
     Path.basename(project),
@@ -137,7 +144,7 @@ let existingProject = async (
       ...devDependencies,
     ],
   )
-  P.writeJson(Path.join2(directory, "package.json"), original)
+  let? Ok() = P.writeJson(Path.join2(directory, "package.json"), original)
   Fs.mkdirSync(Path.join2(directory, "src"), {recursive: true})
   let tsPreserved = switch typescript {
   | None => []
@@ -187,7 +194,7 @@ let existingProject = async (
   preserved->Array.forEach(((path, contents)) =>
     Fs.writeFileSync(Path.join2(directory, path), contents)
   )
-  let _ = await P.run(context, [context.info.command, "install"], directory)
+  let? Ok(_) = await P.run(context, [context.info.command, "install"], directory)
   let modulePrompts = switch typescript {
   | Some(resolution) =>
     let extensionPrompts = switch resolution {
@@ -202,7 +209,7 @@ let existingProject = async (
     }
     [("What module system will you use?", answer)]
   }
-  await P.cli(
+  let? Ok() = await P.cli(
     context,
     directory,
     ~args=[],
@@ -281,20 +288,25 @@ let existingProject = async (
       `import {answer} from "./Interop.gen.${extension}";\nconst value: number = answer;\n`,
     )
   }
-  await verifyProject(context, directory, suffix)
-  let output = await P.run(context, [context.info.command, "run", "test"], directory)
+  let? Ok() = await verifyProject(context, directory, suffix)
+  let? Ok(output) = await P.run(context, [context.info.command, "run", "test"], directory)
   Assert.ok(
     output->String.split("\n")->Array.some(line => line->String.trim === "true"),
     "Existing JavaScript program no longer runs",
   )
   switch typescript {
-  | None => ()
+  | None => Ok()
   | Some(_) =>
     Assert.ok(
       Fs.existsSync(Path.join2(directory, "src/Interop.gen.ts")),
       "genType did not generate TypeScript",
     )
-    let _ = await P.run(context, ["node", "node_modules/typescript/bin/tsc", "--noEmit"], directory)
+    let? Ok(_) = await P.run(
+      context,
+      ["node", "node_modules/typescript/bin/tsc", "--noEmit"],
+      directory,
+    )
+    Ok()
   }
 }
 
@@ -303,7 +315,7 @@ let occupiedDirectory = async (context, directory) => {
   Fs.mkdirSync(project, {recursive: true})
   let sentinel = Path.join2(project, "keep.txt")
   Fs.writeFileSync(sentinel, "Do not overwrite\n")
-  await P.cli(
+  let? Ok() = await P.cli(
     context,
     directory,
     ~args=["occupied", "--template", "basic"],
@@ -320,9 +332,10 @@ let occupiedDirectory = async (context, directory) => {
     ["keep.txt"],
     "Failed scaffolding left files in the occupied directory",
   )
+  Ok()
 }
 
-type scenario = {name: string, perform: string => promise<unit>}
+type scenario = {name: string, perform: string => promise<result<unit, P.error>>}
 
 let scenarios = (context: P.context) => {
   let common = [
@@ -375,14 +388,15 @@ let scenarios = (context: P.context) => {
 
 let rec runScenarios = async (context, remaining) =>
   switch remaining {
-  | list{} => ()
+  | list{} => Ok()
   | list{scenario, ...rest} =>
-    await P.runCase(context, scenario.name, scenario.perform)
+    let? Ok() = await P.runCase(context, scenario.name, scenario.perform)
     await runScenarios(context, rest)
   }
 
 let execute = async context => {
   let cases = scenarios(context)
-  await runScenarios(context, cases->List.fromArray)
+  let? Ok() = await runScenarios(context, cases->List.fromArray)
   Console.log(`PASS: ${cases->Array.length->Int.toString} E2E cases for ${context.info.name}`)
+  Ok()
 }

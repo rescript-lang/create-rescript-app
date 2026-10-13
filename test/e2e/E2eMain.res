@@ -17,52 +17,74 @@ let rec parseArguments = (remaining, arguments: arguments) =>
     switch arguments {
     | {packagePath: Some(packagePath), manager: Some(manager), logs: Some(logs)} =>
       Ok({P.packagePath, manager, logs})
-    | _ => Error(usage)
+    | _ => Error(#InvalidArguments(usage))
     }
-  | _ => Error(usage)
+  | _ => Error(#InvalidArguments(usage))
   }
 
 @scope(("import", "meta")) external importMetaUrl: Url.t = "url"
 
+let runSuite = async (context, options: P.options) => {
+  let launcherPath = Path.join2(importMetaUrl->Url.fileURLToPath->Path.dirname, "E2eLaunch.res.mjs")
+  let? Ok() = await P.setup(context, ~packagePath=options.packagePath, ~launcherPath)
+  await E2eScenarios.execute(context)
+}
+
+let runInWorkspace = async (options, workspace) => {
+  let? Ok(context) = P.makeContext(options, workspace)
+  let outcome = try {
+    await runSuite(context, options)
+  } catch {
+  | JsExn(cause) => Error(#TestFailure(cause))
+  }
+  switch outcome {
+  | Ok() => ()
+  | Error(_) =>
+    if Fs.existsSync(context.log.contents) {
+      switch P.fileOperation(context.log.contents, () => Fs.readFileSync(context.log.contents)) {
+      | Ok(log) => Console.error(log)
+      | Error(error) => Console.error(P.formatError(error))
+      }
+    }
+    Console.error(`FAIL ${context.info.name}; log: ${context.log.contents}`)
+  }
+  outcome
+}
+
 let main = async () => {
-  Assert.strictEqual(
-    Process.platform,
-    "linux",
-    ~message="The E2E terminal runner requires Linux with util-linux script",
-  )
+  let? Ok() = switch Process.platform {
+  | "linux" => Ok()
+  | platform => Error(#UnsupportedPlatform(platform))
+  }
   let? Ok(options) = parseArguments(
     Process.argv->Array.slice(~start=2)->List.fromArray,
     {packagePath: None, manager: None, logs: None},
   )
-  let workspace = Fs.mkdtempSync(Path.join2(Os.tmpdir(), "cra e2e "))
-  let context = P.makeContext(options, workspace)
-  let outcome = try {
-    let launcherPath = Path.join2(
-      importMetaUrl->Url.fileURLToPath->Path.dirname,
-      "E2eLaunch.res.mjs",
-    )
-    await P.setup(context, ~packagePath=options.packagePath, ~launcherPath)
-    await E2eScenarios.execute(context)
+  let prefix = Path.join2(Os.tmpdir(), "cra e2e ")
+  let? Ok(workspace) = P.fileOperation(prefix, () => Fs.mkdtempSync(prefix))
+  let outcome = try await runInWorkspace(options, workspace) catch {
+  | JsExn(cause) => Error(#TestFailure(cause))
+  }
+  let cleanup = try {
+    await Fs.Promises.rm(workspace, ~options={recursive: true, force: true})
     Ok()
   } catch {
-  | JsExn(error) => Error(error)
+  | JsExn(cause) => Error(#FileError({P.path: workspace, cause}))
   }
-  await Fs.Promises.rm(workspace, ~options={recursive: true, force: true})
-  outcome->Result.mapError(error => {
-    if Fs.existsSync(context.log.contents) {
-      Console.error(Fs.readFileSync(context.log.contents))
-    }
-    let detail =
-      JsExn.stack(error)->Option.orElse(JsExn.message(error))->Option.getOr("Unknown error")
-    `FAIL ${context.info.name}; log: ${context.log.contents}\n${detail}`
-  })
+  switch (outcome, cleanup) {
+  | (Error(primary), Error(secondary)) =>
+    Console.error(`Workspace cleanup also failed:\n${P.formatError(secondary)}`)
+    Error(primary)
+  | (Error(_), _) => outcome
+  | (Ok(), _) => cleanup
+  }
 }
 
 let run = async () =>
   switch await main() {
   | Ok() => ()
-  | Error(message) =>
-    Console.error(message)
+  | Error(error) =>
+    Console.error(P.formatError(error))
     Process.state.exitCode = 1
   }
 
