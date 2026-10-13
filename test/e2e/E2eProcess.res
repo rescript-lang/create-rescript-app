@@ -83,11 +83,9 @@ let killGroup = (child, signal) =>
 let runCommand = async (context, command, cwd, ~expected, ~mode) => {
   let commandText = shellJoin(command)
   N.Fs.append(context.log.contents, `\n$ ${commandText}\n(cwd: ${cwd})\n`)
+  // util-linux script supplies a real terminal; all control and assertions are ReScript.
   let (executable, args, prompts, stdinMode) = switch mode {
-  | Terminal(
-      prompts,
-    ) => // util-linux script supplies a real terminal; all control and assertions are ReScript.
-    (
+  | Terminal(prompts) => (
       "script",
       [
         "--quiet",
