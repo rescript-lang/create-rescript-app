@@ -47,7 +47,7 @@ let runInWorkspace = async (options, workspace) => {
   | Ok() => ()
   | Error(_) =>
     if Fs.existsSync(context.log.contents) {
-      switch P.fileOperation(context.log.contents, () => Fs.readFileSync(context.log.contents)) {
+      switch NodeSafe.Fs.readFileSync(context.log.contents) {
       | Ok(log) => Console.error(log)
       | Error(error) => Console.error(P.formatError(error))
       }
@@ -69,18 +69,13 @@ let main = async () => {
   )
 
   let prefix = Path.join2(Os.tmpdir(), "cra e2e ")
-  let? Ok(workspace) = P.fileOperation(prefix, () => Fs.mkdtempSync(prefix))
+  let? Ok(workspace) = NodeSafe.Fs.mkdtempSync(prefix)
 
   let outcome = try await runInWorkspace(options, workspace) catch {
   | JsExn(cause) => Error(#TestFailure(cause))
   }
 
-  let cleanup = try {
-    await Fs.Promises.rm(workspace, ~options={recursive: true, force: true})
-    Ok()
-  } catch {
-  | JsExn(cause) => Error(#FileError({P.path: workspace, cause}))
-  }
+  let cleanup = await NodeSafe.Fs.Promises.rm(workspace, ~options={recursive: true, force: true})
 
   switch (outcome, cleanup) {
   | (Error(primary), Error(secondary)) =>

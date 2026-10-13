@@ -6,7 +6,7 @@ let launch = () =>
   | (Some(directory), dict{"CRA_E2E_CLI": cliPath}) =>
     let args = Process.argv->Array.slice(~start=3)
 
-    let? Ok(result) = ChildProcess.spawnSync(
+    let? Ok(result) = NodeSafe.ChildProcess.spawnSync(
       Process.execPath,
       [cliPath, ...args],
       {

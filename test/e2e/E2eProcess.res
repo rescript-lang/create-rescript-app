@@ -20,7 +20,6 @@ type context = {
 
 type prompt = (string, string)
 type commandMode = Piped | Terminal(array<prompt>)
-type fileError = {path: string, cause: JsExn.t}
 type exitError = {command: string, actual: option<int>, signal: option<string>, expected: int}
 type promptError = {answered: int, expected: int}
 
@@ -30,7 +29,7 @@ type error = [
   | #SpawnError(JsExn.t)
   | #InputError(JsExn.t)
   | #SignalError(JsExn.t)
-  | #FileError(fileError)
+  | #FileError(NodeSafe.fileError)
   | #CommandTimedOut(string)
   | #UnexpectedExit(exitError)
   | #UnansweredPrompts(promptError)
@@ -62,16 +61,7 @@ let formatError = (error: error) =>
   | #TestFailure(cause) => describeCause(cause)
   }
 
-let fileOperation = (path, perform) =>
-  try Ok(perform()) catch {
-  | JsExn(cause) => Error(#FileError({path, cause}))
-  }
-
-let writeFile = (path, contents) => fileOperation(path, () => Fs.writeFileSync(path, contents))
-let makeDirectory = path => fileOperation(path, () => Fs.mkdirSync(path, {recursive: true}))
-
-let appendLog = (context, contents) =>
-  fileOperation(context.log.contents, () => Fs.appendFileSync(context.log.contents, contents))
+let appendLog = (context, contents) => NodeSafe.Fs.appendFileSync(context.log.contents, contents)
 
 let managerInfo = (manager: PackageManagers.packageManager) =>
   switch manager {
@@ -95,11 +85,13 @@ let parseManager = (name): result<PackageManagers.packageManager, [> #InvalidArg
 let quote = value => `'${value->String.replaceAll("'", "'\\''")}'`
 let shellJoin = command => command->Array.map(quote)->Array.join(" ")
 let readJson = path => Fs.readFileSync(path)->JSON.parseOrThrow
-let writeJson = (path, json) => writeFile(path, `${JSON.stringify(json, ~space=2)}\n`)
+
+let writeJson = (path, json) =>
+  NodeSafe.Fs.writeFileSync(path, `${JSON.stringify(json, ~space=2)}\n`)
 
 let makeContext = (options: options, workspace) => {
   let logs = Path.resolve(options.logs)
-  let? Ok() = makeDirectory(logs)
+  let? Ok() = NodeSafe.Fs.mkdirSync(logs, {recursive: true})
   let env = Process.env->Dict.copy
   [
     ("CI", "false"),
@@ -132,7 +124,7 @@ let killGroup = (child, signal) =>
   switch child->ChildProcess.pid {
   | None => Ok()
   | Some(pid) =>
-    switch Process.kill(-pid, signal) {
+    switch NodeSafe.Process.kill(-pid, signal) {
     | Error(#SignalError(cause)) if cause->errorCode === Some("ESRCH") => Ok()
     | outcome => outcome
     }
@@ -167,7 +159,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
     }
   }
 
-  let? Ok(child) = ChildProcess.spawn(
+  let? Ok(child) = NodeSafe.ChildProcess.spawn(
     executable,
     args,
     {
@@ -218,7 +210,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
       let? Ok() = appendLog(context, chunk)
       switch (prompts->Array.get(nextPrompt.contents), child->ChildProcess.stdin) {
       | (Some((question, answer)), Some(stdin)) if pending.contents->String.includes(question) =>
-        let? Ok() = stdin->ChildProcess.write(answer)
+        let? Ok() = stdin->NodeSafe.ChildProcess.write(answer)
         nextPrompt := nextPrompt.contents + 1
         pending := ""
         Ok()
@@ -312,7 +304,7 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
     "CRA_E2E_CLI",
     Path.join2(cliDirectory, "node_modules/create-rescript-app/out/create-rescript-app.cjs"),
   )
-  let? Ok() = makeDirectory(context.launcher)
+  let? Ok() = NodeSafe.Fs.mkdirSync(context.launcher, {recursive: true})
 
   let? Ok() = writeJson(
     Path.join2(context.launcher, "package.json"),
@@ -327,7 +319,10 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
 
   let? Ok() = switch context.manager {
   | YarnBerry =>
-    writeFile(Path.join2(context.launcher, ".yarnrc.yml"), "nodeLinker: node-modules\n")
+    NodeSafe.Fs.writeFileSync(
+      Path.join2(context.launcher, ".yarnrc.yml"),
+      "nodeLinker: node-modules\n",
+    )
   | _ => Ok()
   }
 
@@ -337,9 +332,9 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
 
 let runCase = async (context, name, perform) => {
   context.log := Path.join2(context.logs, `${name}.log`)
-  let? Ok() = writeFile(context.log.contents, "")
+  let? Ok() = NodeSafe.Fs.writeFileSync(context.log.contents, "")
   let directory = Path.join2(context.workspace, name)
-  let? Ok() = makeDirectory(directory)
+  let? Ok() = NodeSafe.Fs.mkdirSync(directory, {recursive: true})
   Console.log(`RUN ${context.info.name}: ${name}`)
 
   let? Ok() = try await perform(directory) catch {

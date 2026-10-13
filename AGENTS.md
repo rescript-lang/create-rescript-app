@@ -22,7 +22,7 @@
 - Do not run `rescript`, `npm test`, or `npm run prepack` in parallel; ReScript compiler artifacts are not safe for concurrent builds in this repo.
 - Module files and variant constructors are PascalCase (`Templates.res`), values/functions and type names camelCase, and records use snake_case fields only when matching external JSON.
 - Keep `.resi` signatures accurate and minimal; avoid exposing helpers that are template-specific.
-- Keep Node.js bindings in `src/bindings/Node.res` and reuse existing bindings.
+- Keep raw Node.js bindings in `src/bindings/Node.res`. Put exception-to-result/option wrappers in `src/bindings/NodeSafe.res`, using small concrete helpers.
 - When touching templates, mirror upstream defaults and keep package scripts consistent with the chosen toolchain.
 
 ## Package Manager Support

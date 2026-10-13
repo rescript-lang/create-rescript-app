@@ -57,7 +57,7 @@ Test.describe("E2E command failures", () => {
   Test.testAsync("wraps spawnSync error properties for the launcher", () =>
     withContext(
       async context => {
-        switch ChildProcess.spawnSync(
+        switch NodeSafe.ChildProcess.spawnSync(
           Path.join2(context.workspace, "missing-command"),
           [],
           {cwd: context.workspace, stdio: "pipe"},
