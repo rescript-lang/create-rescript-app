@@ -1,0 +1,245 @@
+open Node
+module N = E2eNode
+
+type manager = Npm | Pnpm | YarnClassic | YarnBerry | Bun
+type managerInfo = {name: string, command: string, lockfile: string}
+type options = {packagePath: string, manager: manager, logs: string}
+type context = {
+  manager: manager,
+  info: managerInfo,
+  workspace: string,
+  logs: string,
+  log: ref<string>,
+  launcher: string,
+  env: Dict.t<string>,
+}
+type prompt = (string, string)
+
+let managerInfo = manager =>
+  switch manager {
+  | Npm => {name: "npm", command: "npm", lockfile: "package-lock.json"}
+  | Pnpm => {name: "pnpm", command: "pnpm", lockfile: "pnpm-lock.yaml"}
+  | YarnClassic => {name: "yarn-classic", command: "yarn", lockfile: "yarn.lock"}
+  | YarnBerry => {name: "yarn-berry", command: "yarn", lockfile: "yarn.lock"}
+  | Bun => {name: "bun", command: "bun", lockfile: "bun.lock"}
+  }
+
+let parseManager = name =>
+  switch name {
+  | "npm" => Ok(Npm)
+  | "pnpm" => Ok(Pnpm)
+  | "yarn-classic" => Ok(YarnClassic)
+  | "yarn-berry" => Ok(YarnBerry)
+  | "bun" => Ok(Bun)
+  | _ => Error(`Unknown package manager: ${name}`)
+  }
+
+let quote = value => `'${value->String.replaceAll("'", "'\\''")}'`
+let shellJoin = command => command->Array.map(quote)->Array.join(" ")
+let readJson = path => Fs.readFileSync(path)->JSON.parseOrThrow
+let writeJson = (path, json) => N.Fs.write(path, `${JSON.stringify(json, ~space=2)}\n`)
+
+let makeContext = (options: options, workspace) => {
+  let logs = N.Path.resolve(options.logs)
+  N.Fs.mkdir(logs, {recursive: true})
+  let env = N.Process.env->Dict.copy
+  [
+    ("CI", "false"),
+    ("TERM", "xterm"),
+    ("NO_COLOR", "1"),
+    ("NPM_CONFIG_AUDIT", "false"),
+    ("NPM_CONFIG_FUND", "false"),
+    ("YARN_ENABLE_TELEMETRY", "0"),
+  ]->Array.forEach(((name, value)) => env->Dict.set(name, value))
+  // Let each manager supply its own identity, rather than inherit npm run test:e2e's.
+  [
+    "FORCE_COLOR",
+    "npm_execpath",
+    "npm_config_user_agent",
+    "npm_node_execpath",
+    "INIT_CWD",
+  ]->Array.forEach(name => env->Dict.delete(name))
+  {
+    manager: options.manager,
+    info: managerInfo(options.manager),
+    workspace,
+    logs,
+    log: ref(Path.join2(logs, "setup.log")),
+    launcher: Path.join2(workspace, "launcher"),
+    env,
+  }
+}
+
+let killGroup = (child, signal) =>
+  switch child->N.ChildProcess.pid {
+  | None => ()
+  | Some(pid) =>
+    try N.Process.kill(-pid, signal) catch {
+    | JsExn(error) if error->N.errorCode === Some("ESRCH") => ()
+    }
+  }
+
+let run = async (
+  context,
+  command,
+  cwd,
+  ~expected=0,
+  ~terminal=false,
+  ~prompts: array<prompt>=[],
+) => {
+  let commandText = shellJoin(command)
+  N.Fs.append(context.log.contents, `\n$ ${commandText}\n(cwd: ${cwd})\n`)
+  let (executable, args) = if terminal {
+    // util-linux script supplies a real terminal; all control and assertions are ReScript.
+    (
+      "script",
+      [
+        "--quiet",
+        "--return",
+        "--echo=never",
+        "--command",
+        `stty cols 160 rows 40; exec ${commandText}`,
+        "/dev/null",
+      ],
+    )
+  } else {
+    switch command->List.fromArray {
+    | list{executable, ...args} => (executable, args->List.toArray)
+    | list{} => N.Assert.fail("Cannot run an empty command")
+    }
+  }
+  let child = N.ChildProcess.spawn(
+    executable,
+    args,
+    {
+      cwd,
+      env: context.env,
+      detached: true,
+      stdio: [terminal ? "pipe" : "ignore", "pipe", "pipe"],
+    },
+  )
+  // Mutable state is confined to this command's Node event callbacks.
+  let output = ref("")
+  let pending = ref("")
+  let nextPrompt = ref(0)
+  let timedOut = ref(false)
+  let inputError = ref(None)
+  let forceKill = ref(None)
+  let timeout = N.Timer.start(() => {
+    timedOut := true
+    killGroup(child, "SIGTERM")
+    forceKill := Some(N.Timer.start(() => killGroup(child, "SIGKILL"), 3000))
+  }, 300_000)
+  let collect = chunk => {
+    output := output.contents ++ chunk
+    pending := pending.contents ++ chunk
+    N.Fs.append(context.log.contents, chunk)
+    switch (prompts->Array.get(nextPrompt.contents), child->N.ChildProcess.stdin) {
+    | (Some((question, answer)), Some(stdin)) if pending.contents->String.includes(question) =>
+      stdin->N.ChildProcess.write(answer)
+      nextPrompt := nextPrompt.contents + 1
+      pending := ""
+    | _ => ()
+    }
+  }
+  [child->N.ChildProcess.stdout, child->N.ChildProcess.stderr]->Array.forEach(stream => {
+    stream->N.ChildProcess.setEncoding
+    stream->N.ChildProcess.onData(collect)
+  })
+  switch child->N.ChildProcess.stdin {
+  | Some(stdin) =>
+    stdin->N.ChildProcess.onInputError(error => {
+      if error->N.errorCode !== Some("EPIPE") {
+        inputError := Some(error)
+        killGroup(child, "SIGTERM")
+      }
+    })
+  | None => ()
+  }
+  let completion = await Promise.make((resolve, _reject) => {
+    child->N.ChildProcess.onError(error => resolve(Error(error)))
+    child->N.ChildProcess.onClose((code, signal) => resolve(Ok((code, signal))))
+  })
+  timeout->N.Timer.clear
+  forceKill.contents->Option.forEach(N.Timer.clear)
+  child->N.ChildProcess.stdin->Option.forEach(N.ChildProcess.destroyInput)
+  inputError.contents->Option.forEach(JsExn.throw)
+  N.Assert.check(!timedOut.contents, `Command timed out: ${commandText}`)
+  switch completion {
+  | Error(error) => JsExn.throw(error)
+  | Ok((code, signal)) =>
+    let actual = code->Nullable.toOption
+    let description = switch actual {
+    | Some(code) => code->Int.toString
+    | None => signal->Nullable.toOption->Option.getOr("unknown signal")
+    }
+    N.Assert.equal(
+      actual,
+      Some(expected),
+      `Command exited ${description}, expected ${expected->Int.toString}: ${commandText}`,
+    )
+  }
+  N.Assert.equal(
+    nextPrompt.contents,
+    prompts->Array.length,
+    "CLI exited before answering all prompts",
+  )
+  output.contents
+}
+
+let cli = async (context, cwd, ~args=[], ~expected=0, ~prompts=[]) => {
+  let separator = switch context.manager {
+  | Npm => ["--"]
+  | _ => []
+  }
+  let _ = await run(
+    context,
+    [context.info.command, "run", "cra", ...separator, cwd, ...args],
+    context.launcher,
+    ~expected,
+    ~prompts,
+    ~terminal=true,
+  )
+}
+
+let setup = async (context, ~packagePath, ~launcherPath) => {
+  let _ = await run(context, ["node", "--version"], context.workspace)
+  let _ = await run(context, [context.info.command, "--version"], context.workspace)
+  let cliDirectory = Path.join2(context.workspace, "cli")
+  let _ = await run(
+    context,
+    ["npm", "install", "--prefix", cliDirectory, N.Path.resolve(packagePath)],
+    context.workspace,
+  )
+  context.env->Dict.set(
+    "CRA_E2E_CLI",
+    Path.join2(cliDirectory, "node_modules/create-rescript-app/out/create-rescript-app.cjs"),
+  )
+  N.Fs.mkdir(context.launcher, {recursive: true})
+  writeJson(
+    Path.join2(context.launcher, "package.json"),
+    JSON.parseOrThrow(
+      `{
+    "name": "cra-e2e-launcher",
+    "private": true,
+    "scripts": {"cra": ${JSON.stringify(JSON.String(shellJoin(["node", launcherPath])))}}
+  }`,
+    ),
+  )
+  switch context.manager {
+  | YarnBerry =>
+    N.Fs.write(Path.join2(context.launcher, ".yarnrc.yml"), "nodeLinker: node-modules\n")
+  | _ => ()
+  }
+  let _ = await run(context, [context.info.command, "install"], context.launcher)
+}
+
+let runCase = async (context, name, perform) => {
+  context.log := Path.join2(context.logs, `${name}.log`)
+  N.Fs.write(context.log.contents, "")
+  let directory = Path.join2(context.workspace, name)
+  N.Fs.mkdir(directory, {recursive: true})
+  Console.log(`RUN ${context.info.name}: ${name}`)
+  await perform(directory)
+  Console.log(`PASS ${context.info.name}: ${name}`)
+}

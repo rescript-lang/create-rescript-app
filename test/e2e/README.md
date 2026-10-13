@@ -13,6 +13,12 @@ The npm job also covers existing ESM projects, NodeNext and bundler TypeScript
 projects (including compiling a genType consumer), devcontainer-only directories,
 `.` and `./`, and rejection of an occupied target without modifying its files.
 
+The harness is written in ReScript, alongside the other tests. `E2eScenarios.res`
+contains the fixtures and assertions, `E2eProcess.res` runs commands and answers
+prompts, and `E2eNode.res` contains test-only Node bindings. `E2eLaunch.res` runs the
+packed CLI through the selected manager's package script. The `test/` source
+directory is already included in `rescript.json`.
+
 The harness uses Node.js built-ins and Ubuntu's `script` utility (from util-linux)
 to answer the real interactive prompts through a pseudo-terminal. It sets
 `CI=false` for the CLI so the old hardcoded CI
@@ -32,3 +38,7 @@ npm run test:e2e -- --package create-rescript-app-1.12.1.tgz --manager npm --log
 The terminal runner currently targets Linux, matching CI. The other package-manager names are
 `pnpm`, `yarn-classic`, `yarn-berry` and `bun`; install the pinned version from the
 workflow when reproducing a particular job.
+
+`npm run test:e2e` compiles the ReScript sources before running the harness.
+Run `npm ci` first to install its build dependencies. Generated `.res.mjs` files
+are not committed.

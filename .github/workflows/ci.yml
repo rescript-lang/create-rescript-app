@@ -142,6 +142,9 @@ jobs:
         with:
           name: ${{ needs.build.outputs.artifact_filename }}
 
+      - name: Install harness build dependencies
+        run: npm ci
+
       - name: Install, compile and run real projects
         env:
           PACKAGE: ${{ needs.build.outputs.artifact_filename }}

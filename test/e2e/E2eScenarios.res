@@ -1,0 +1,356 @@
+open Node
+open JSON
+module N = E2eNode
+module P = E2eProcess
+
+type moduleSystem = CommonJs | EsModule
+type tsResolution = NodeNext | Bundler
+
+let object = (entries: array<(string, JSON.t)>) => JSON.Object(entries->Dict.fromArray)
+let field = (json: JSON.t, name) =>
+  switch json {
+  | Object(fields) =>
+    switch fields->Dict.get(name) {
+    | Some(value) => value
+    | None => N.Assert.fail(`Missing JSON field: ${name}`)
+    }
+  | _ => N.Assert.fail(`Expected a JSON object containing ${name}`)
+  }
+let stringField = (json, name) =>
+  switch field(json, name) {
+  | String(value) => value
+  | _ => N.Assert.fail(`Expected a string in JSON field: ${name}`)
+  }
+let assertContains = (actual, expected, message) =>
+  N.Assert.check(actual->String.includes(expected), message)
+
+let verifyProject = async (context: P.context, directory, suffix) => {
+  let packageJson = P.readJson(Path.join2(directory, "package.json"))
+  let config = P.readJson(Path.join2(directory, "rescript.json"))
+  N.Assert.equal(
+    stringField(config, "name"),
+    stringField(packageJson, "name"),
+    "Project and package names differ",
+  )
+  N.Assert.equal(stringField(config, "suffix"), suffix, "Unexpected generated JS suffix")
+  N.Assert.check(
+    Fs.existsSync(Path.join2(directory, context.info.lockfile)),
+    `Missing ${context.info.lockfile}: manager detection failed`,
+  )
+  switch context.manager {
+  | Npm => ()
+  | _ =>
+    N.Assert.check(
+      !Fs.existsSync(Path.join2(directory, "package-lock.json")),
+      "npm lockfile was not removed",
+    )
+  }
+  switch context.manager {
+  | YarnBerry =>
+    Fs.readFileSync(Path.join2(directory, ".yarnrc.yml"))->assertContains(
+      "nodeLinker: node-modules",
+      "Yarn Berry node-modules linker was not configured",
+    )
+  | _ => ()
+  }
+  let version =
+    P.readJson(Path.join2(directory, "node_modules/rescript/package.json"))->stringField("version")
+  N.Assert.check(
+    version->String.startsWith("12."),
+    `Expected a current ReScript 12 version, installed ${version}`,
+  )
+  switch field(packageJson, "dependencies") {
+  | Object(dependencies) =>
+    N.Assert.check(
+      !(dependencies->Dict.has("@rescript/core")),
+      "ReScript 12 should use its bundled standard library",
+    )
+  | _ => N.Assert.fail("Expected package dependencies")
+  }
+  let _ = await P.run(context, [context.info.command, "run", "res:build"], directory)
+  let output = await P.run(context, ["node", `src/Demo${suffix}`], directory)
+  N.Assert.equal(output->String.trim, "Hello, world!", "Unexpected generated program output")
+}
+
+let verifyPreserved = (directory, preserved) =>
+  preserved->Array.forEach(((path, contents)) => {
+    let actual = Fs.readFileSync(Path.join2(directory, path))
+    switch path {
+    | ".gitignore" => N.Assert.check(actual->String.startsWith(contents), `Overwrote ${path}`)
+    | _ => N.Assert.equal(actual, contents, `Overwrote ${path}`)
+    }
+  })
+
+let newProject = async (context, directory, ~target="my-app", ~devcontainer=false) => {
+  let currentDirectory = switch target {
+  | "." | "./" => true
+  | _ => false
+  }
+  let project = currentDirectory ? directory : Path.join2(directory, target)
+  let preserved = if devcontainer {
+    N.Fs.mkdir(Path.join2(project, ".devcontainer"), {recursive: true})
+    let metadata = currentDirectory
+      ? [("README.md", "Existing README\n"), (".gitignore", "keep-this-entry\n")]
+      : []
+    [(".devcontainer/devcontainer.json", "{\"name\":\"keep me\"}\n"), ...metadata]
+  } else {
+    []
+  }
+  preserved->Array.forEach(((path, contents)) => N.Fs.write(Path.join2(project, path), contents))
+  await P.cli(context, directory, ~args=[target, "--template", "basic"])
+  N.Assert.equal(
+    P.readJson(Path.join2(project, "package.json"))->stringField("name"),
+    Path.basename(project),
+    "Current-directory package name was not derived from the directory",
+  )
+  verifyPreserved(project, preserved)
+  await verifyProject(context, project, ".res.mjs")
+}
+
+let existingProject = async (context, directory, ~moduleSystem=CommonJs, ~typescript=?) => {
+  let moduleName = switch moduleSystem {
+  | CommonJs => "commonjs"
+  | EsModule => "module"
+  }
+  let devDependencies = switch typescript {
+  | Some(_) => [("devDependencies", object([("typescript", String("5.9.3"))]))]
+  | None => []
+  }
+  let original = object(
+    [
+      ("name", String(Path.basename(directory))),
+      ("version", String("1.0.0")),
+      ("private", Boolean(true)),
+      ("type", String(moduleName)),
+      ("scripts", object([("test", String("node src/original.cjs"))])),
+      ("dependencies", object([("is-number", String("7.0.0"))])),
+      ...devDependencies,
+    ],
+  )
+  P.writeJson(Path.join2(directory, "package.json"), original)
+  N.Fs.mkdir(Path.join2(directory, "src"), {recursive: true})
+  let tsPreserved = switch typescript {
+  | None => []
+  | Some(resolution) =>
+    let (moduleName, resolutionName) = switch resolution {
+    | NodeNext => ("NodeNext", "nodenext")
+    | Bundler => ("ESNext", "bundler")
+    }
+    N.Fs.write(
+      Path.join2(directory, "tsconfig.json"),
+      `{
+  // Preserve this comment and the inherited configuration.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {"skipLibCheck": true,},
+  "include": ["src"],
+}
+`,
+    )
+    [
+      ("src/original.ts", "export const existingValue: number = 1;\n"),
+      (
+        "tsconfig.base.json",
+        JSON.stringify(
+          object([
+            (
+              "compilerOptions",
+              object([
+                ("module", String(moduleName)),
+                ("moduleResolution", String(resolutionName)),
+                ("target", String("ES2022")),
+                ("strict", Boolean(true)),
+                ("noEmit", Boolean(true)),
+              ]),
+            ),
+          ]),
+          ~space=2,
+        ),
+      ),
+    ]
+  }
+  let preserved = [
+    ("README.md", "Existing project README\n"),
+    (".gitignore", "existing-ignore\n"),
+    ("src/original.cjs", "console.log(require(\"is-number\")(42));\n"),
+    ...tsPreserved,
+  ]
+  preserved->Array.forEach(((path, contents)) => N.Fs.write(Path.join2(directory, path), contents))
+  let _ = await P.run(context, [context.info.command, "install"], directory)
+  let modulePrompts = switch typescript {
+  | Some(resolution) =>
+    let extensionPrompts = switch resolution {
+    | NodeNext => []
+    | Bundler => [("Set compilerOptions.allowImportingTsExtensions to true", "y")]
+    }
+    [("Set compilerOptions.allowJs to true", "y"), ...extensionPrompts]
+  | None =>
+    let answer = switch moduleSystem {
+    | CommonJs => "\x1b[B\r"
+    | EsModule => "\r"
+    }
+    [("What module system will you use?", answer)]
+  }
+  await P.cli(
+    context,
+    directory,
+    ~prompts=[
+      ("Do you want to add ReScript", "y"),
+      ("ReScript version?", "\r"),
+      ("Where will you put your ReScript source files?", "\r"),
+      ...modulePrompts,
+      ("Do you want to check generated", "n"),
+    ],
+  )
+  let packageJson = P.readJson(Path.join2(directory, "package.json"))
+  ["name", "version", "private", "type"]->Array.forEach(name =>
+    N.Assert.deepEqual(
+      field(packageJson, name),
+      field(original, name),
+      `Changed existing package field ${name}`,
+    )
+  )
+  N.Assert.deepEqual(
+    field(packageJson, "scripts")->field("test"),
+    field(original, "scripts")->field("test"),
+    "Overwrote existing script",
+  )
+  N.Assert.equal(
+    field(packageJson, "dependencies")->stringField("is-number"),
+    "7.0.0",
+    "Changed existing dependency",
+  )
+  switch typescript {
+  | Some(_) =>
+    N.Assert.deepEqual(
+      field(packageJson, "devDependencies"),
+      field(original, "devDependencies"),
+      "Changed TypeScript dependency",
+    )
+  | None => ()
+  }
+  verifyPreserved(directory, preserved)
+  let suffix = switch (typescript, moduleSystem) {
+  | (None, EsModule) => ".res.mjs"
+  | _ => ".res.js"
+  }
+  Fs.readFileSync(Path.join2(directory, ".gitignore"))->assertContains(
+    `**/*${suffix}`,
+    "Generated JS was not ignored",
+  )
+  switch typescript {
+  | None => ()
+  | Some(resolution) =>
+    let (gentypeResolution, extension) = switch resolution {
+    | NodeNext => ("node16", "js")
+    | Bundler => ("bundler", "ts")
+    }
+    let config = P.readJson(Path.join2(directory, "rescript.json"))
+    N.Assert.equal(
+      field(config, "gentypeconfig")->stringField("moduleResolution"),
+      gentypeResolution,
+      "Incorrect genType mapping",
+    )
+    let tsconfig = Fs.readFileSync(Path.join2(directory, "tsconfig.json"))
+    tsconfig->assertContains("// Preserve this comment", "Lost tsconfig comment")
+    tsconfig->assertContains("\"allowJs\": true", "Did not enable allowJs")
+    switch resolution {
+    | NodeNext => ()
+    | Bundler =>
+      tsconfig->assertContains(
+        "\"allowImportingTsExtensions\": true",
+        "Did not enable TS extension imports",
+      )
+    }
+    N.Fs.write(Path.join2(directory, "src/Interop.res"), "@genType\nlet answer = 42\n")
+    N.Fs.write(
+      Path.join2(directory, "src/consumer.ts"),
+      `import {answer} from "./Interop.gen.${extension}";\nconst value: number = answer;\n`,
+    )
+  }
+  await verifyProject(context, directory, suffix)
+  let output = await P.run(context, [context.info.command, "run", "test"], directory)
+  N.Assert.check(
+    output->String.split("\n")->Array.some(line => line->String.trim === "true"),
+    "Existing JavaScript program no longer runs",
+  )
+  switch typescript {
+  | None => ()
+  | Some(_) =>
+    N.Assert.check(
+      Fs.existsSync(Path.join2(directory, "src/Interop.gen.ts")),
+      "genType did not generate TypeScript",
+    )
+    let _ = await P.run(context, ["node", "node_modules/typescript/bin/tsc", "--noEmit"], directory)
+  }
+}
+
+let occupiedDirectory = async (context, directory) => {
+  let project = Path.join2(directory, "occupied")
+  N.Fs.mkdir(project, {recursive: true})
+  let sentinel = Path.join2(project, "keep.txt")
+  N.Fs.write(sentinel, "Do not overwrite\n")
+  await P.cli(context, directory, ~args=["occupied", "--template", "basic"], ~expected=1)
+  N.Assert.equal(Fs.readFileSync(sentinel), "Do not overwrite\n", "Overwrote occupied directory")
+  N.Assert.deepEqual(
+    Fs.readdirSync(project),
+    ["keep.txt"],
+    "Failed scaffolding left files in the occupied directory",
+  )
+}
+
+type scenario = {name: string, perform: string => promise<unit>}
+
+let scenarios = (context: P.context) => {
+  let common = [
+    {name: "new-basic", perform: directory => newProject(context, directory)},
+    {name: "existing-commonjs", perform: directory => existingProject(context, directory)},
+  ]
+  switch context.manager {
+  | Npm =>
+    [
+      ...common,
+      {
+        name: "existing-esm",
+        perform: directory => existingProject(context, directory, ~moduleSystem=EsModule),
+      },
+      {
+        name: "existing-ts-nodenext",
+        perform: directory =>
+          existingProject(context, directory, ~moduleSystem=EsModule, ~typescript=NodeNext),
+      },
+      {
+        name: "existing-ts-bundler",
+        perform: directory =>
+          existingProject(context, directory, ~moduleSystem=EsModule, ~typescript=Bundler),
+      },
+      {
+        name: "devcontainer-named",
+        perform: directory => newProject(context, directory, ~devcontainer=true),
+      },
+      {
+        name: "devcontainer-dot",
+        perform: directory => newProject(context, directory, ~target=".", ~devcontainer=true),
+      },
+      {
+        name: "devcontainer-dot-slash",
+        perform: directory => newProject(context, directory, ~target="./", ~devcontainer=true),
+      },
+      {name: "occupied-directory", perform: directory => occupiedDirectory(context, directory)},
+    ]
+  | _ => common
+  }
+}
+
+let rec runScenarios = async (context, remaining) =>
+  switch remaining {
+  | list{} => ()
+  | list{scenario, ...rest} =>
+    await P.runCase(context, scenario.name, scenario.perform)
+    await runScenarios(context, rest)
+  }
+
+let execute = async context => {
+  let cases = scenarios(context)
+  await runScenarios(context, cases->List.fromArray)
+  Console.log(`PASS: ${cases->Array.length->Int.toString} E2E cases for ${context.info.name}`)
+}
