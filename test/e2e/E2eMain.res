@@ -1,5 +1,4 @@
 open Node
-module N = E2eNode
 module P = E2eProcess
 
 type arguments = {packagePath: option<string>, manager: option<P.manager>, logs: option<string>}
@@ -28,19 +27,19 @@ let rec parseArguments = (remaining, arguments: arguments) =>
 @scope(("import", "meta")) external importMetaUrl: Url.t = "url"
 
 let main = async () => {
-  N.Assert.equal(
-    N.Process.platform,
+  Assert.strictEqual(
+    Process.platform,
     "linux",
-    "The E2E terminal runner requires Linux with util-linux script",
+    ~message="The E2E terminal runner requires Linux with util-linux script",
   )
   let options = switch parseArguments(
     Process.argv->Array.slice(~start=2)->List.fromArray,
     {packagePath: None, manager: None, logs: None},
   ) {
   | Ok(options) => options
-  | Error(message) => N.Assert.fail(message)
+  | Error(message) => Assert.fail(message)
   }
-  let workspace = N.Fs.mkdtemp(Path.join2(N.Os.tmpdir(), "cra e2e "))
+  let workspace = Fs.mkdtempSync(Path.join2(Os.tmpdir(), "cra e2e "))
   let context = P.makeContext(options, workspace)
   let outcome = try {
     let launcherPath = Path.join2(
@@ -62,14 +61,14 @@ let main = async () => {
     }
     Console.error(`FAIL ${context.info.name}; log: ${context.log.contents}`)
     Console.error(error)
-    N.Process.state.exitCode = 1
+    Process.state.exitCode = 1
   }
 }
 
 main()
 ->Promise.catch(error => {
   Console.error(error)
-  N.Process.state.exitCode = 1
+  Process.state.exitCode = 1
   Promise.resolve()
 })
 ->Promise.ignore

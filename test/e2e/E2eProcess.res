@@ -1,5 +1,4 @@
 open Node
-module N = E2eNode
 
 type manager = Npm | Pnpm | YarnClassic | YarnBerry | Bun
 type managerInfo = {name: string, command: string, lockfile: string}
@@ -38,12 +37,12 @@ let parseManager = name =>
 let quote = value => `'${value->String.replaceAll("'", "'\\''")}'`
 let shellJoin = command => command->Array.map(quote)->Array.join(" ")
 let readJson = path => Fs.readFileSync(path)->JSON.parseOrThrow
-let writeJson = (path, json) => N.Fs.write(path, `${JSON.stringify(json, ~space=2)}\n`)
+let writeJson = (path, json) => Fs.writeFileSync(path, `${JSON.stringify(json, ~space=2)}\n`)
 
 let makeContext = (options: options, workspace) => {
-  let logs = N.Path.resolve(options.logs)
-  N.Fs.mkdir(logs, {recursive: true})
-  let env = N.Process.env->Dict.copy
+  let logs = Path.resolve(options.logs)
+  Fs.mkdirSync(logs, {recursive: true})
+  let env = Process.env->Dict.copy
   [
     ("CI", "false"),
     ("TERM", "xterm"),
@@ -72,17 +71,17 @@ let makeContext = (options: options, workspace) => {
 }
 
 let killGroup = (child, signal) =>
-  switch child->N.ChildProcess.pid {
+  switch child->ChildProcess.pid {
   | None => ()
   | Some(pid) =>
-    try N.Process.kill(-pid, signal) catch {
-    | JsExn(error) if error->N.errorCode === Some("ESRCH") => ()
+    try Process.kill(-pid, signal) catch {
+    | JsExn(error) if error->errorCode === Some("ESRCH") => ()
     }
   }
 
 let runCommand = async (context, command, cwd, ~expected, ~mode) => {
   let commandText = shellJoin(command)
-  N.Fs.append(context.log.contents, `\n$ ${commandText}\n(cwd: ${cwd})\n`)
+  Fs.appendFileSync(context.log.contents, `\n$ ${commandText}\n(cwd: ${cwd})\n`)
   // util-linux script supplies a real terminal; all control and assertions are ReScript.
   let (executable, args, prompts, stdinMode) = switch mode {
   | Terminal(prompts) => (
@@ -101,10 +100,10 @@ let runCommand = async (context, command, cwd, ~expected, ~mode) => {
   | Piped =>
     switch command->List.fromArray {
     | list{executable, ...args} => (executable, args->List.toArray, [], "ignore")
-    | list{} => N.Assert.fail("Cannot run an empty command")
+    | list{} => Assert.fail("Cannot run an empty command")
     }
   }
-  let child = N.ChildProcess.spawn(
+  let child = ChildProcess.spawn(
     executable,
     args,
     {
@@ -121,31 +120,31 @@ let runCommand = async (context, command, cwd, ~expected, ~mode) => {
   let timedOut = ref(false)
   let inputError = ref(None)
   let forceKill = ref(None)
-  let timeout = N.Timer.start(() => {
+  let timeout = Timer.setTimeout(() => {
     timedOut := true
     killGroup(child, "SIGTERM")
-    forceKill := Some(N.Timer.start(() => killGroup(child, "SIGKILL"), 3000))
+    forceKill := Some(Timer.setTimeout(() => killGroup(child, "SIGKILL"), 3000))
   }, 300_000)
   let collect = chunk => {
     output := output.contents ++ chunk
     pending := pending.contents ++ chunk
-    N.Fs.append(context.log.contents, chunk)
-    switch (prompts->Array.get(nextPrompt.contents), child->N.ChildProcess.stdin) {
+    Fs.appendFileSync(context.log.contents, chunk)
+    switch (prompts->Array.get(nextPrompt.contents), child->ChildProcess.stdin) {
     | (Some((question, answer)), Some(stdin)) if pending.contents->String.includes(question) =>
-      stdin->N.ChildProcess.write(answer)
+      stdin->ChildProcess.write(answer)
       nextPrompt := nextPrompt.contents + 1
       pending := ""
     | _ => ()
     }
   }
-  [child->N.ChildProcess.stdout, child->N.ChildProcess.stderr]->Array.forEach(stream => {
-    stream->N.ChildProcess.setEncoding
-    stream->N.ChildProcess.onData(collect)
+  [child->ChildProcess.stdout, child->ChildProcess.stderr]->Array.forEach(stream => {
+    stream->ChildProcess.setEncoding
+    stream->ChildProcess.onData(collect)
   })
-  switch child->N.ChildProcess.stdin {
+  switch child->ChildProcess.stdin {
   | Some(stdin) =>
-    stdin->N.ChildProcess.onInputError(error => {
-      if error->N.errorCode !== Some("EPIPE") {
+    stdin->ChildProcess.onInputError(error => {
+      if error->errorCode !== Some("EPIPE") {
         inputError := Some(error)
         killGroup(child, "SIGTERM")
       }
@@ -153,14 +152,14 @@ let runCommand = async (context, command, cwd, ~expected, ~mode) => {
   | None => ()
   }
   let completion = await Promise.make((resolve, _reject) => {
-    child->N.ChildProcess.onError(error => resolve(Error(error)))
-    child->N.ChildProcess.onClose((code, signal) => resolve(Ok((code, signal))))
+    child->ChildProcess.onError(error => resolve(Error(error)))
+    child->ChildProcess.onClose((code, signal) => resolve(Ok((code, signal))))
   })
-  timeout->N.Timer.clear
-  forceKill.contents->Option.forEach(N.Timer.clear)
-  child->N.ChildProcess.stdin->Option.forEach(N.ChildProcess.destroyInput)
+  timeout->Timer.clearTimeout
+  forceKill.contents->Option.forEach(Timer.clearTimeout)
+  child->ChildProcess.stdin->Option.forEach(ChildProcess.destroyInput)
   inputError.contents->Option.forEach(JsExn.throw)
-  N.Assert.check(!timedOut.contents, `Command timed out: ${commandText}`)
+  Assert.ok(!timedOut.contents, `Command timed out: ${commandText}`)
   switch completion {
   | Error(error) => JsExn.throw(error)
   | Ok((code, signal)) =>
@@ -169,16 +168,16 @@ let runCommand = async (context, command, cwd, ~expected, ~mode) => {
     | Some(code) => code->Int.toString
     | None => signal->Nullable.toOption->Option.getOr("unknown signal")
     }
-    N.Assert.equal(
+    Assert.strictEqual(
       actual,
       Some(expected),
-      `Command exited ${description}, expected ${expected->Int.toString}: ${commandText}`,
+      ~message=`Command exited ${description}, expected ${expected->Int.toString}: ${commandText}`,
     )
   }
-  N.Assert.equal(
+  Assert.strictEqual(
     nextPrompt.contents,
     prompts->Array.length,
-    "CLI exited before answering all prompts",
+    ~message="CLI exited before answering all prompts",
   )
   output.contents
 }
@@ -205,14 +204,14 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
   let cliDirectory = Path.join2(context.workspace, "cli")
   let _ = await run(
     context,
-    ["npm", "install", "--prefix", cliDirectory, N.Path.resolve(packagePath)],
+    ["npm", "install", "--prefix", cliDirectory, Path.resolve(packagePath)],
     context.workspace,
   )
   context.env->Dict.set(
     "CRA_E2E_CLI",
     Path.join2(cliDirectory, "node_modules/create-rescript-app/out/create-rescript-app.cjs"),
   )
-  N.Fs.mkdir(context.launcher, {recursive: true})
+  Fs.mkdirSync(context.launcher, {recursive: true})
   writeJson(
     Path.join2(context.launcher, "package.json"),
     JSON.parseOrThrow(
@@ -225,7 +224,7 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
   )
   switch context.manager {
   | YarnBerry =>
-    N.Fs.write(Path.join2(context.launcher, ".yarnrc.yml"), "nodeLinker: node-modules\n")
+    Fs.writeFileSync(Path.join2(context.launcher, ".yarnrc.yml"), "nodeLinker: node-modules\n")
   | _ => ()
   }
   let _ = await run(context, [context.info.command, "install"], context.launcher)
@@ -233,9 +232,9 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
 
 let runCase = async (context, name, perform) => {
   context.log := Path.join2(context.logs, `${name}.log`)
-  N.Fs.write(context.log.contents, "")
+  Fs.writeFileSync(context.log.contents, "")
   let directory = Path.join2(context.workspace, name)
-  N.Fs.mkdir(directory, {recursive: true})
+  Fs.mkdirSync(directory, {recursive: true})
   Console.log(`RUN ${context.info.name}: ${name}`)
   await perform(directory)
   Console.log(`PASS ${context.info.name}: ${name}`)

@@ -1,6 +1,5 @@
 open Node
 open JSON
-module N = E2eNode
 module P = E2eProcess
 
 type moduleSystem = CommonJs | EsModule
@@ -12,35 +11,39 @@ let field = (json: JSON.t, name) =>
   | Object(fields) =>
     switch fields->Dict.get(name) {
     | Some(value) => value
-    | None => N.Assert.fail(`Missing JSON field: ${name}`)
+    | None => Assert.fail(`Missing JSON field: ${name}`)
     }
-  | _ => N.Assert.fail(`Expected a JSON object containing ${name}`)
+  | _ => Assert.fail(`Expected a JSON object containing ${name}`)
   }
 let stringField = (json, name) =>
   switch field(json, name) {
   | String(value) => value
-  | _ => N.Assert.fail(`Expected a string in JSON field: ${name}`)
+  | _ => Assert.fail(`Expected a string in JSON field: ${name}`)
   }
 let assertContains = (actual, expected, message) =>
-  N.Assert.check(actual->String.includes(expected), message)
+  Assert.ok(actual->String.includes(expected), message)
 
 let verifyProject = async (context: P.context, directory, suffix) => {
   let packageJson = P.readJson(Path.join2(directory, "package.json"))
   let config = P.readJson(Path.join2(directory, "rescript.json"))
-  N.Assert.equal(
+  Assert.strictEqual(
     stringField(config, "name"),
     stringField(packageJson, "name"),
-    "Project and package names differ",
+    ~message="Project and package names differ",
   )
-  N.Assert.equal(stringField(config, "suffix"), suffix, "Unexpected generated JS suffix")
-  N.Assert.check(
+  Assert.strictEqual(
+    stringField(config, "suffix"),
+    suffix,
+    ~message="Unexpected generated JS suffix",
+  )
+  Assert.ok(
     Fs.existsSync(Path.join2(directory, context.info.lockfile)),
     `Missing ${context.info.lockfile}: manager detection failed`,
   )
   switch context.manager {
   | Npm => ()
   | _ =>
-    N.Assert.check(
+    Assert.ok(
       !Fs.existsSync(Path.join2(directory, "package-lock.json")),
       "npm lockfile was not removed",
     )
@@ -55,29 +58,33 @@ let verifyProject = async (context: P.context, directory, suffix) => {
   }
   let version =
     P.readJson(Path.join2(directory, "node_modules/rescript/package.json"))->stringField("version")
-  N.Assert.check(
+  Assert.ok(
     version->String.startsWith("12."),
     `Expected a current ReScript 12 version, installed ${version}`,
   )
   switch field(packageJson, "dependencies") {
   | Object(dependencies) =>
-    N.Assert.check(
+    Assert.ok(
       !(dependencies->Dict.has("@rescript/core")),
       "ReScript 12 should use its bundled standard library",
     )
-  | _ => N.Assert.fail("Expected package dependencies")
+  | _ => Assert.fail("Expected package dependencies")
   }
   let _ = await P.run(context, [context.info.command, "run", "res:build"], directory)
   let output = await P.run(context, ["node", `src/Demo${suffix}`], directory)
-  N.Assert.equal(output->String.trim, "Hello, world!", "Unexpected generated program output")
+  Assert.strictEqual(
+    output->String.trim,
+    "Hello, world!",
+    ~message="Unexpected generated program output",
+  )
 }
 
 let verifyPreserved = (directory, preserved) =>
   preserved->Array.forEach(((path, contents)) => {
     let actual = Fs.readFileSync(Path.join2(directory, path))
     switch path {
-    | ".gitignore" => N.Assert.check(actual->String.startsWith(contents), `Overwrote ${path}`)
-    | _ => N.Assert.equal(actual, contents, `Overwrote ${path}`)
+    | ".gitignore" => Assert.ok(actual->String.startsWith(contents), `Overwrote ${path}`)
+    | _ => Assert.strictEqual(actual, contents, ~message=`Overwrote ${path}`)
     }
   })
 
@@ -88,7 +95,7 @@ let newProject = async (context, directory, ~target, ~devcontainer) => {
   }
   let project = currentDirectory ? directory : Path.join2(directory, target)
   let preserved = if devcontainer {
-    N.Fs.mkdir(Path.join2(project, ".devcontainer"), {recursive: true})
+    Fs.mkdirSync(Path.join2(project, ".devcontainer"), {recursive: true})
     let metadata = currentDirectory
       ? [("README.md", "Existing README\n"), (".gitignore", "keep-this-entry\n")]
       : []
@@ -96,12 +103,14 @@ let newProject = async (context, directory, ~target, ~devcontainer) => {
   } else {
     []
   }
-  preserved->Array.forEach(((path, contents)) => N.Fs.write(Path.join2(project, path), contents))
+  preserved->Array.forEach(((path, contents)) =>
+    Fs.writeFileSync(Path.join2(project, path), contents)
+  )
   await P.cli(context, directory, ~args=[target, "--template", "basic"], ~expected=0, ~prompts=[])
-  N.Assert.equal(
+  Assert.strictEqual(
     P.readJson(Path.join2(project, "package.json"))->stringField("name"),
     Path.basename(project),
-    "Current-directory package name was not derived from the directory",
+    ~message="Current-directory package name was not derived from the directory",
   )
   verifyPreserved(project, preserved)
   await verifyProject(context, project, ".res.mjs")
@@ -133,7 +142,7 @@ let existingProject = async (
     ],
   )
   P.writeJson(Path.join2(directory, "package.json"), original)
-  N.Fs.mkdir(Path.join2(directory, "src"), {recursive: true})
+  Fs.mkdirSync(Path.join2(directory, "src"), {recursive: true})
   let tsPreserved = switch typescript {
   | None => []
   | Some(resolution) =>
@@ -141,7 +150,7 @@ let existingProject = async (
     | NodeNext => ("NodeNext", "nodenext")
     | Bundler => ("ESNext", "bundler")
     }
-    N.Fs.write(
+    Fs.writeFileSync(
       Path.join2(directory, "tsconfig.json"),
       `{
   // Preserve this comment and the inherited configuration.
@@ -179,7 +188,9 @@ let existingProject = async (
     ("src/original.cjs", "console.log(require(\"is-number\")(42));\n"),
     ...tsPreserved,
   ]
-  preserved->Array.forEach(((path, contents)) => N.Fs.write(Path.join2(directory, path), contents))
+  preserved->Array.forEach(((path, contents)) =>
+    Fs.writeFileSync(Path.join2(directory, path), contents)
+  )
   let _ = await P.run(context, [context.info.command, "install"], directory)
   let modulePrompts = switch typescript {
   | Some(resolution) =>
@@ -210,25 +221,25 @@ let existingProject = async (
   )
   let packageJson = P.readJson(Path.join2(directory, "package.json"))
   ["name", "version", "private", "type"]->Array.forEach(name =>
-    N.Assert.deepEqual(
+    Assert.deepStrictEqual(
       field(packageJson, name),
       field(original, name),
       `Changed existing package field ${name}`,
     )
   )
-  N.Assert.deepEqual(
+  Assert.deepStrictEqual(
     field(packageJson, "scripts")->field("test"),
     field(original, "scripts")->field("test"),
     "Overwrote existing script",
   )
-  N.Assert.equal(
+  Assert.strictEqual(
     field(packageJson, "dependencies")->stringField("is-number"),
     "7.0.0",
-    "Changed existing dependency",
+    ~message="Changed existing dependency",
   )
   switch typescript {
   | Some(_) =>
-    N.Assert.deepEqual(
+    Assert.deepStrictEqual(
       field(packageJson, "devDependencies"),
       field(original, "devDependencies"),
       "Changed TypeScript dependency",
@@ -252,10 +263,10 @@ let existingProject = async (
     | Bundler => ("bundler", "ts")
     }
     let config = P.readJson(Path.join2(directory, "rescript.json"))
-    N.Assert.equal(
+    Assert.strictEqual(
       field(config, "gentypeconfig")->stringField("moduleResolution"),
       gentypeResolution,
-      "Incorrect genType mapping",
+      ~message="Incorrect genType mapping",
     )
     let tsconfig = Fs.readFileSync(Path.join2(directory, "tsconfig.json"))
     tsconfig->assertContains("// Preserve this comment", "Lost tsconfig comment")
@@ -268,22 +279,22 @@ let existingProject = async (
         "Did not enable TS extension imports",
       )
     }
-    N.Fs.write(Path.join2(directory, "src/Interop.res"), "@genType\nlet answer = 42\n")
-    N.Fs.write(
+    Fs.writeFileSync(Path.join2(directory, "src/Interop.res"), "@genType\nlet answer = 42\n")
+    Fs.writeFileSync(
       Path.join2(directory, "src/consumer.ts"),
       `import {answer} from "./Interop.gen.${extension}";\nconst value: number = answer;\n`,
     )
   }
   await verifyProject(context, directory, suffix)
   let output = await P.run(context, [context.info.command, "run", "test"], directory)
-  N.Assert.check(
+  Assert.ok(
     output->String.split("\n")->Array.some(line => line->String.trim === "true"),
     "Existing JavaScript program no longer runs",
   )
   switch typescript {
   | None => ()
   | Some(_) =>
-    N.Assert.check(
+    Assert.ok(
       Fs.existsSync(Path.join2(directory, "src/Interop.gen.ts")),
       "genType did not generate TypeScript",
     )
@@ -293,9 +304,9 @@ let existingProject = async (
 
 let occupiedDirectory = async (context, directory) => {
   let project = Path.join2(directory, "occupied")
-  N.Fs.mkdir(project, {recursive: true})
+  Fs.mkdirSync(project, {recursive: true})
   let sentinel = Path.join2(project, "keep.txt")
-  N.Fs.write(sentinel, "Do not overwrite\n")
+  Fs.writeFileSync(sentinel, "Do not overwrite\n")
   await P.cli(
     context,
     directory,
@@ -303,8 +314,12 @@ let occupiedDirectory = async (context, directory) => {
     ~expected=1,
     ~prompts=[],
   )
-  N.Assert.equal(Fs.readFileSync(sentinel), "Do not overwrite\n", "Overwrote occupied directory")
-  N.Assert.deepEqual(
+  Assert.strictEqual(
+    Fs.readFileSync(sentinel),
+    "Do not overwrite\n",
+    ~message="Overwrote occupied directory",
+  )
+  Assert.deepStrictEqual(
     Fs.readdirSync(project),
     ["keep.txt"],
     "Failed scaffolding left files in the occupied directory",

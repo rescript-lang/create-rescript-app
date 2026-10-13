@@ -15,7 +15,7 @@ projects (including compiling a genType consumer), devcontainer-only directories
 
 The harness is written in ReScript, alongside the other tests. `E2eScenarios.res`
 contains the fixtures and assertions, `E2eProcess.res` runs commands and answers
-prompts, and `E2eNode.res` contains test-only Node bindings. `E2eLaunch.res` runs the
+prompts, and Node bindings live in `src/bindings/Node.res`. `E2eLaunch.res` runs the
 packed CLI through the selected manager's package script. The `test/` source
 directory is already included in `rescript.json`.
 
