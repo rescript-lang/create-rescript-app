@@ -6,12 +6,17 @@
 
 ## Coding Style & Naming Conventions
 
-- Make sure to use modern ReScript and not Reason syntax! Read https://rescript-lang.org/llms/manual/llm-small.txt to learn the language syntax.
+- Use ReScript 12 syntax and the built-in standard library, not Reason syntax. Read https://rescript-lang.org/llms/manual/llm-small.txt to learn the language syntax.
+- Prefer `Option`, `Result`, `Array`, `List`, `Dict`, `Set`, `Map`, and `JSON` over `Js.*` or `Belt.*`.
+- Match local style; avoid old BuckleScript/ReScript-era patterns.
+- Write new tests and test helpers in ReScript under `test/`. Prefer records and functions over classes.
+- Keep parameters mandatory unless callers need to omit them.
+- Do not add redundant parentheses around switch expressions: use `switch value { ... }`. Parentheses required by tuple syntax are fine.
 - Formatting is enforced by `rescript format`; keep 2-space indentation and prefer pattern matching over chained conditionals.
 - Prefer `result` values over exceptions for expected failure paths; only raise or throw at clear integration boundaries where the surrounding API requires it.
 - Prefer pattern matching over `if`/`else` chains when branching on the shape or state of the same value; plain comparisons across different values are fine with `if`/`else`.
 - Do not run `rescript`, `npm test`, or `npm run prepack` in parallel; ReScript compiler artifacts are not safe for concurrent builds in this repo.
-- Module files are PascalCase (`Templates.res`), values/functions camelCase, types/variants PascalCase, and records snake_case fields only when matching external JSON.
+- Module files and variant constructors are PascalCase (`Templates.res`), values/functions and type names camelCase, and records use snake_case fields only when matching external JSON.
 - Keep `.resi` signatures accurate and minimal; avoid exposing helpers that are template-specific.
 - When touching templates, mirror upstream defaults and keep package scripts consistent with the chosen toolchain.
 

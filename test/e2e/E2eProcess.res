@@ -14,6 +14,7 @@ type context = {
   env: Dict.t<string>,
 }
 type prompt = (string, string)
+type commandMode = Piped | Terminal(array<prompt>)
 
 let managerInfo = manager =>
   switch manager {
@@ -79,18 +80,13 @@ let killGroup = (child, signal) =>
     }
   }
 
-let run = async (
-  context,
-  command,
-  cwd,
-  ~expected=0,
-  ~terminal=false,
-  ~prompts: array<prompt>=[],
-) => {
+let runCommand = async (context, command, cwd, ~expected, ~mode) => {
   let commandText = shellJoin(command)
   N.Fs.append(context.log.contents, `\n$ ${commandText}\n(cwd: ${cwd})\n`)
-  let (executable, args) = if terminal {
-    // util-linux script supplies a real terminal; all control and assertions are ReScript.
+  let (executable, args, prompts, stdinMode) = switch mode {
+  | Terminal(
+      prompts,
+    ) => // util-linux script supplies a real terminal; all control and assertions are ReScript.
     (
       "script",
       [
@@ -101,10 +97,12 @@ let run = async (
         `stty cols 160 rows 40; exec ${commandText}`,
         "/dev/null",
       ],
+      prompts,
+      "pipe",
     )
-  } else {
+  | Piped =>
     switch command->List.fromArray {
-    | list{executable, ...args} => (executable, args->List.toArray)
+    | list{executable, ...args} => (executable, args->List.toArray, [], "ignore")
     | list{} => N.Assert.fail("Cannot run an empty command")
     }
   }
@@ -115,7 +113,7 @@ let run = async (
       cwd,
       env: context.env,
       detached: true,
-      stdio: [terminal ? "pipe" : "ignore", "pipe", "pipe"],
+      stdio: [stdinMode, "pipe", "pipe"],
     },
   )
   // Mutable state is confined to this command's Node event callbacks.
@@ -187,18 +185,19 @@ let run = async (
   output.contents
 }
 
-let cli = async (context, cwd, ~args=[], ~expected=0, ~prompts=[]) => {
+let run = (context, command, cwd) => runCommand(context, command, cwd, ~expected=0, ~mode=Piped)
+
+let cli = async (context, cwd, ~args, ~expected, ~prompts) => {
   let separator = switch context.manager {
   | Npm => ["--"]
   | _ => []
   }
-  let _ = await run(
+  let _ = await runCommand(
     context,
     [context.info.command, "run", "cra", ...separator, cwd, ...args],
     context.launcher,
     ~expected,
-    ~prompts,
-    ~terminal=true,
+    ~mode=Terminal(prompts),
   )
 }
 

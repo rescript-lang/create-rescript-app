@@ -81,7 +81,7 @@ let verifyPreserved = (directory, preserved) =>
     }
   })
 
-let newProject = async (context, directory, ~target="my-app", ~devcontainer=false) => {
+let newProject = async (context, directory, ~target, ~devcontainer) => {
   let currentDirectory = switch target {
   | "." | "./" => true
   | _ => false
@@ -97,7 +97,7 @@ let newProject = async (context, directory, ~target="my-app", ~devcontainer=fals
     []
   }
   preserved->Array.forEach(((path, contents)) => N.Fs.write(Path.join2(project, path), contents))
-  await P.cli(context, directory, ~args=[target, "--template", "basic"])
+  await P.cli(context, directory, ~args=[target, "--template", "basic"], ~expected=0, ~prompts=[])
   N.Assert.equal(
     P.readJson(Path.join2(project, "package.json"))->stringField("name"),
     Path.basename(project),
@@ -107,7 +107,12 @@ let newProject = async (context, directory, ~target="my-app", ~devcontainer=fals
   await verifyProject(context, project, ".res.mjs")
 }
 
-let existingProject = async (context, directory, ~moduleSystem=CommonJs, ~typescript=?) => {
+let existingProject = async (
+  context,
+  directory,
+  ~moduleSystem,
+  ~typescript: option<tsResolution>,
+) => {
   let moduleName = switch moduleSystem {
   | CommonJs => "commonjs"
   | EsModule => "module"
@@ -193,6 +198,8 @@ let existingProject = async (context, directory, ~moduleSystem=CommonJs, ~typesc
   await P.cli(
     context,
     directory,
+    ~args=[],
+    ~expected=0,
     ~prompts=[
       ("Do you want to add ReScript", "y"),
       ("ReScript version?", "\r"),
@@ -289,7 +296,13 @@ let occupiedDirectory = async (context, directory) => {
   N.Fs.mkdir(project, {recursive: true})
   let sentinel = Path.join2(project, "keep.txt")
   N.Fs.write(sentinel, "Do not overwrite\n")
-  await P.cli(context, directory, ~args=["occupied", "--template", "basic"], ~expected=1)
+  await P.cli(
+    context,
+    directory,
+    ~args=["occupied", "--template", "basic"],
+    ~expected=1,
+    ~prompts=[],
+  )
   N.Assert.equal(Fs.readFileSync(sentinel), "Do not overwrite\n", "Overwrote occupied directory")
   N.Assert.deepEqual(
     Fs.readdirSync(project),
@@ -302,8 +315,15 @@ type scenario = {name: string, perform: string => promise<unit>}
 
 let scenarios = (context: P.context) => {
   let common = [
-    {name: "new-basic", perform: directory => newProject(context, directory)},
-    {name: "existing-commonjs", perform: directory => existingProject(context, directory)},
+    {
+      name: "new-basic",
+      perform: directory => newProject(context, directory, ~target="my-app", ~devcontainer=false),
+    },
+    {
+      name: "existing-commonjs",
+      perform: directory =>
+        existingProject(context, directory, ~moduleSystem=CommonJs, ~typescript=None),
+    },
   ]
   switch context.manager {
   | Npm =>
@@ -311,21 +331,22 @@ let scenarios = (context: P.context) => {
       ...common,
       {
         name: "existing-esm",
-        perform: directory => existingProject(context, directory, ~moduleSystem=EsModule),
+        perform: directory =>
+          existingProject(context, directory, ~moduleSystem=EsModule, ~typescript=None),
       },
       {
         name: "existing-ts-nodenext",
         perform: directory =>
-          existingProject(context, directory, ~moduleSystem=EsModule, ~typescript=NodeNext),
+          existingProject(context, directory, ~moduleSystem=EsModule, ~typescript=Some(NodeNext)),
       },
       {
         name: "existing-ts-bundler",
         perform: directory =>
-          existingProject(context, directory, ~moduleSystem=EsModule, ~typescript=Bundler),
+          existingProject(context, directory, ~moduleSystem=EsModule, ~typescript=Some(Bundler)),
       },
       {
         name: "devcontainer-named",
-        perform: directory => newProject(context, directory, ~devcontainer=true),
+        perform: directory => newProject(context, directory, ~target="my-app", ~devcontainer=true),
       },
       {
         name: "devcontainer-dot",
