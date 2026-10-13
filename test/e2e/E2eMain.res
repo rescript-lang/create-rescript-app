@@ -1,7 +1,11 @@
 open Node
 module P = E2eProcess
 
-type arguments = {packagePath: option<string>, manager: option<P.manager>, logs: option<string>}
+type arguments = {
+  packagePath: option<string>,
+  manager: option<PackageManagers.packageManager>,
+  logs: option<string>,
+}
 
 let usage = "Usage: npm run test:e2e -- --package <tarball> --manager <npm|pnpm|yarn-classic|yarn-berry|bun> --logs <directory>"
 

@@ -10,6 +10,7 @@
 - Prefer `Option`, `Result`, `Array`, `List`, `Dict`, `Set`, `Map`, and `JSON` over `Js.*` or `Belt.*`.
 - Match local style; avoid old BuckleScript/ReScript-era patterns.
 - Write new tests and test helpers in ReScript under `test/`. Prefer records and functions over classes.
+- Reuse existing application types in tests instead of redefining them.
 - Keep parameters mandatory unless callers need to omit them.
 - Do not add redundant parentheses around switch expressions: use `switch value { ... }`. Parentheses required by tuple syntax are fine.
 - Formatting is enforced by `rescript format`; keep 2-space indentation and prefer pattern matching over chained conditionals.

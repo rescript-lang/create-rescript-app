@@ -1,11 +1,15 @@
 open Node
 
-type manager = Npm | Pnpm | YarnClassic | YarnBerry | Bun
 type managerInfo = {name: string, command: string, lockfile: string}
-type options = {packagePath: string, manager: manager, logs: string}
+
+type options = {
+  packagePath: string,
+  manager: PackageManagers.packageManager,
+  logs: string,
+}
 
 type context = {
-  manager: manager,
+  manager: PackageManagers.packageManager,
   info: managerInfo,
   workspace: string,
   logs: string,
@@ -69,20 +73,20 @@ let makeDirectory = path => fileOperation(path, () => Fs.mkdirSync(path, {recurs
 let appendLog = (context, contents) =>
   fileOperation(context.log.contents, () => Fs.appendFileSync(context.log.contents, contents))
 
-let managerInfo = manager =>
+let managerInfo = (manager: PackageManagers.packageManager) =>
   switch manager {
   | Npm => {name: "npm", command: "npm", lockfile: "package-lock.json"}
   | Pnpm => {name: "pnpm", command: "pnpm", lockfile: "pnpm-lock.yaml"}
-  | YarnClassic => {name: "yarn-classic", command: "yarn", lockfile: "yarn.lock"}
+  | Yarn1 => {name: "yarn-classic", command: "yarn", lockfile: "yarn.lock"}
   | YarnBerry => {name: "yarn-berry", command: "yarn", lockfile: "yarn.lock"}
   | Bun => {name: "bun", command: "bun", lockfile: "bun.lock"}
   }
 
-let parseManager = name =>
+let parseManager = (name): result<PackageManagers.packageManager, [> #InvalidArguments(string)]> =>
   switch name {
   | "npm" => Ok(Npm)
   | "pnpm" => Ok(Pnpm)
-  | "yarn-classic" => Ok(YarnClassic)
+  | "yarn-classic" => Ok(Yarn1)
   | "yarn-berry" => Ok(YarnBerry)
   | "bun" => Ok(Bun)
   | _ => Error(#InvalidArguments(`Unknown package manager: ${name}`))
