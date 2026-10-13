@@ -110,13 +110,38 @@ Test.describe("E2E command failures", () => {
           context.workspace,
         ) {
         | Error(#UnexpectedExit({actual, expected, signal})) =>
-          Assert.strictEqual(actual, Some(7))
+          Assert.strictEqual(actual, Value(7))
           Assert.strictEqual(expected, 0)
-          Assert.strictEqual(signal, None)
+          Assert.strictEqual(signal, Null)
         | _ => Assert.fail("Expected an unexpected-exit error")
         }
       },
     )
+  )
+
+  Test.testAsyncWithOptions(
+    "returns signal termination details",
+    {skip: Process.platform === "win32"},
+    () =>
+      withContext(
+        async context => {
+          switch await P.run(
+            context,
+            [Process.execPath, "-e", "process.kill(process.pid, 'SIGTERM')"],
+            context.workspace,
+          ) {
+          | Error(#UnexpectedExit({actual, expected, signal}) as error) =>
+            Assert.strictEqual(actual, Null)
+            Assert.strictEqual(expected, 0)
+            Assert.strictEqual(signal, Value("SIGTERM"))
+            Assert.ok(
+              P.formatError(error)->String.includes("Command exited SIGTERM"),
+              "Lost the termination signal in the error message",
+            )
+          | _ => Assert.fail("Expected a signal termination error")
+          }
+        },
+      ),
   )
 
   Test.testAsyncWithOptions(

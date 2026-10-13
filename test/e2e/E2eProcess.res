@@ -20,7 +20,14 @@ type context = {
 
 type prompt = (string, string)
 type commandMode = Piped | Terminal(array<prompt>)
-type exitError = {command: string, actual: option<int>, signal: option<string>, expected: int}
+
+type exitError = {
+  command: string,
+  actual: Nullable.t<int>,
+  signal: Nullable.t<string>,
+  expected: int,
+}
+
 type promptError = {answered: int, expected: int}
 
 type error = [
@@ -51,8 +58,8 @@ let formatError = (error: error) =>
   | #CommandTimedOut(command) => `Command timed out: ${command}`
   | #UnexpectedExit({command, actual, signal, expected}) =>
     let status = switch actual {
-    | Some(code) => code->Int.toString
-    | None => signal->Option.getOr("unknown signal")
+    | Value(code) => code->Int.toString
+    | Null | Undefined => signal->Nullable.getOr("unknown signal")
     }
 
     `Command exited ${status}, expected ${expected->Int.toString}: ${command}`
@@ -210,7 +217,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
     let outcome = () => {
       let? Ok() = appendLog(context, chunk)
       switch (prompts->Array.get(nextPrompt.contents), child->ChildProcess.stdin) {
-      | (Some((question, answer)), Some(stdin)) if pending.contents->String.includes(question) =>
+      | (Some((question, answer)), Value(stdin)) if pending.contents->String.includes(question) =>
         let? Ok() = stdin->NodeSafe.ChildProcess.write(answer)
         nextPrompt := nextPrompt.contents + 1
         pending := ""
@@ -233,7 +240,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
   })
   child
   ->ChildProcess.stdin
-  ->Option.forEach(stdin =>
+  ->Nullable.forEach(stdin =>
     stdin->ChildProcess.onInputError(error => {
       if error->errorCode !== Some("EPIPE") {
         recordFailure(#InputError(error))
@@ -249,7 +256,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
 
   timeout->Timer.clearTimeout
   forceKill.contents->Option.forEach(Timer.clearTimeout)
-  child->ChildProcess.stdin->Option.forEach(ChildProcess.destroyInput)
+  child->ChildProcess.stdin->Nullable.forEach(ChildProcess.destroyInput)
 
   // No early propagation until timers and streams have been cleaned up.
   let? Ok() = switch failure.contents {
@@ -257,15 +264,15 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
   | None => Ok()
   }
 
-  let actual = code->Nullable.toOption
-  switch (actual === Some(expected), nextPrompt.contents === prompts->Array.length) {
-  | (false, _) =>
-    Error(
-      #UnexpectedExit({command: commandText, actual, signal: signal->Nullable.toOption, expected}),
-    )
-  | (_, false) =>
-    Error(#UnansweredPrompts({answered: nextPrompt.contents, expected: prompts->Array.length}))
-  | _ => Ok(output.contents)
+  switch code {
+  | Value(actual) if actual === expected =>
+    switch nextPrompt.contents === prompts->Array.length {
+    | true => Ok(output.contents)
+    | false =>
+      Error(#UnansweredPrompts({answered: nextPrompt.contents, expected: prompts->Array.length}))
+    }
+  | Null | Undefined | Value(_) =>
+    Error(#UnexpectedExit({command: commandText, actual: code, signal, expected}))
   }
 }
 

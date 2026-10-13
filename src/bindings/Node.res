@@ -161,7 +161,7 @@ module ChildProcess = {
   @get external pid: t => option<int> = "pid"
   @get external stdout: t => readable = "stdout"
   @get external stderr: t => readable = "stderr"
-  @get @return(nullable) external stdin: t => option<writable> = "stdin"
+  @get external stdin: t => Nullable.t<writable> = "stdin"
   @send external setEncoding: (readable, @as("utf8") _) => unit = "setEncoding"
   @send external onData: (readable, @as("data") _, string => unit) => unit = "on"
   @send external onInputError: (writable, @as("error") _, JsExn.t => unit) => unit = "on"

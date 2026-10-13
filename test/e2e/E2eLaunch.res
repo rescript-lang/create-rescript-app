@@ -15,7 +15,7 @@ let launch = () =>
       },
     )
 
-    Ok(result.status->Nullable.toOption->Option.getOr(1))
+    Ok(result.status->Nullable.getOr(1))
   | _ => Error(#InvalidArguments("Expected a project directory and CRA_E2E_CLI"))
   }
 

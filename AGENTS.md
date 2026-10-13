@@ -9,6 +9,7 @@
 - Use ReScript 12 syntax and the built-in standard library, not Reason syntax. Read https://rescript-lang.org/llms/manual/llm-small.txt to learn the language syntax.
 - Prefer `Option`, `Result`, `Array`, `List`, `Dict`, `Set`, `Map`, and `JSON` over `Js.*` or `Belt.*`.
 - Prefer `dict{...}` patterns for known dictionary keys and nested JSON shapes; use `Dict.get` for dynamic keys.
+- Match `Nullable.t` directly with `Value`, `Null`, and `Undefined`, and use `Nullable.getOr` for defaults instead of converting to `option`.
 - Match local style; avoid old BuckleScript/ReScript-era patterns.
 - Write new tests and test helpers in ReScript under `test/`. Prefer records and functions over classes.
 - Reuse existing application types in tests instead of redefining them.
