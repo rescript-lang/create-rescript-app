@@ -133,7 +133,7 @@ module Url = {
 
   let make = string =>
     try Some(makeUnsafe(string)) catch {
-    | Exn.Error(_exn) => None
+    | JsExn(_) => None
     }
 }
 

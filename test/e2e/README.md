@@ -19,6 +19,10 @@ prompts, and Node bindings live in `src/bindings/Node.res`. `E2eLaunch.res` runs
 packed CLI through the selected manager's package script. The `test/` source
 directory is already included in `rescript.json`.
 
+The harness uses ReScript 12.3's `let?` syntax for option/result propagation, with
+`LetUnwrap` enabled in `rescript.json`, and the built-in standard library for JSON
+decoding and collection helpers.
+
 The harness uses Node.js built-ins and Ubuntu's `script` utility (from util-linux)
 to answer the real interactive prompts through a pseudo-terminal. It sets
 `CI=false` for the CLI so the old hardcoded CI

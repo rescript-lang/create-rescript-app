@@ -71,13 +71,13 @@ let makeContext = (options: options, workspace) => {
 }
 
 let killGroup = (child, signal) =>
-  switch child->ChildProcess.pid {
-  | None => ()
-  | Some(pid) =>
+  child
+  ->ChildProcess.pid
+  ->Option.forEach(pid => {
     try Process.kill(-pid, signal) catch {
     | JsExn(error) if error->errorCode === Some("ESRCH") => ()
     }
-  }
+  })
 
 let runCommand = async (context, command, cwd, ~expected, ~mode) => {
   let commandText = shellJoin(command)
@@ -141,16 +141,16 @@ let runCommand = async (context, command, cwd, ~expected, ~mode) => {
     stream->ChildProcess.setEncoding
     stream->ChildProcess.onData(collect)
   })
-  switch child->ChildProcess.stdin {
-  | Some(stdin) =>
+  child
+  ->ChildProcess.stdin
+  ->Option.forEach(stdin =>
     stdin->ChildProcess.onInputError(error => {
       if error->errorCode !== Some("EPIPE") {
         inputError := Some(error)
         killGroup(child, "SIGTERM")
       }
     })
-  | None => ()
-  }
+  )
   let completion = await Promise.make((resolve, _reject) => {
     child->ChildProcess.onError(error => resolve(Error(error)))
     child->ChildProcess.onClose((code, signal) => resolve(Ok((code, signal))))

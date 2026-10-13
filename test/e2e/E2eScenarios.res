@@ -6,20 +6,16 @@ type moduleSystem = CommonJs | EsModule
 type tsResolution = NodeNext | Bundler
 
 let object = (entries: array<(string, JSON.t)>) => JSON.Object(entries->Dict.fromArray)
-let field = (json: JSON.t, name) =>
-  switch json {
-  | Object(fields) =>
-    switch fields->Dict.get(name) {
-    | Some(value) => value
-    | None => Assert.fail(`Missing JSON field: ${name}`)
-    }
-  | _ => Assert.fail(`Expected a JSON object containing ${name}`)
-  }
+let findField = (json, name) => {
+  let? Some(fields) = json->JSON.Decode.object
+  fields->Dict.get(name)
+}
+let field = (json, name) =>
+  findField(json, name)->Option.getOrThrow(~message=`Expected JSON object field: ${name}`)
 let stringField = (json, name) =>
-  switch field(json, name) {
-  | String(value) => value
-  | _ => Assert.fail(`Expected a string in JSON field: ${name}`)
-  }
+  field(json, name)
+  ->JSON.Decode.string
+  ->Option.getOrThrow(~message=`Expected a string in JSON field: ${name}`)
 let assertContains = (actual, expected, message) =>
   Assert.ok(actual->String.includes(expected), message)
 

@@ -32,7 +32,7 @@ let hasDevcontainerDirectory = projectPath =>
   try {
     Path.join2(projectPath, devcontainerDirectoryName)->Fs.statSync->Fs.Stats.isDirectory
   } catch {
-  | Exn.Error(_) => false
+  | JsExn(_) => false
   }
 
 let containsOnlyDevcontainerDirectory = projectPath =>
@@ -42,7 +42,7 @@ let containsOnlyDevcontainerDirectory = projectPath =>
     | _ => false
     }
   } catch {
-  | Exn.Error(_) => false
+  | JsExn(_) => false
   }
 
 let isAllowedCurrentDirectoryEntry = (~cwd, entry) => {

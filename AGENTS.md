@@ -14,6 +14,7 @@
 - Do not add redundant parentheses around switch expressions: use `switch value { ... }`. Parentheses required by tuple syntax are fine.
 - Formatting is enforced by `rescript format`; keep 2-space indentation and prefer pattern matching over chained conditionals.
 - Prefer `result` values over exceptions for expected failure paths; only raise or throw at clear integration boundaries where the surrounding API requires it.
+- Use `let?` to unwrap and propagate `Option`/`Result` failures where it simplifies the code. `LetUnwrap` is enabled in `rescript.json`.
 - Prefer pattern matching over `if`/`else` chains when branching on the shape or state of the same value; plain comparisons across different values are fine with `if`/`else`.
 - Do not run `rescript`, `npm test`, or `npm run prepack` in parallel; ReScript compiler artifacts are not safe for concurrent builds in this repo.
 - Module files and variant constructors are PascalCase (`Templates.res`), values/functions and type names camelCase, and records use snake_case fields only when matching external JSON.
