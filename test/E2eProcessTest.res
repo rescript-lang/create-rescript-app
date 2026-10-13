@@ -3,6 +3,7 @@ module P = E2eProcess
 
 let withContext = async perform => {
   let workspace = Fs.mkdtempSync(Path.join2(Os.tmpdir(), "cra command test "))
+
   let context = switch P.makeContext(
     {packagePath: "unused.tgz", manager: Npm, logs: Path.join2(workspace, "logs")},
     workspace,
@@ -10,12 +11,14 @@ let withContext = async perform => {
   | Ok(context) => context
   | Error(error) => Assert.fail(P.formatError(error))
   }
+
   let outcome = try {
     await perform(context)
     Ok()
   } catch {
   | JsExn(cause) => Error(cause)
   }
+
   await Fs.Promises.rm(workspace, ~options={recursive: true, force: true})
   switch outcome {
   | Ok() => ()
@@ -77,6 +80,7 @@ Test.describe("E2E command failures", () => {
           ~mode=Piped,
           ~timeoutMs=10_000,
         )
+
         switch outcome {
         | Ok(output) => Assert.strictEqual(output->String.trim, "expected failure")
         | Error(error) => Assert.fail(P.formatError(error))

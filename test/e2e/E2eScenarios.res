@@ -6,16 +6,20 @@ type moduleSystem = CommonJs | EsModule
 type tsResolution = NodeNext | Bundler
 
 let object = (entries: array<(string, JSON.t)>) => JSON.Object(entries->Dict.fromArray)
+
 let findField = (json, name) => {
   let? Some(fields) = json->JSON.Decode.object
   fields->Dict.get(name)
 }
+
 let field = (json, name) =>
   findField(json, name)->Option.getOrThrow(~message=`Expected JSON object field: ${name}`)
+
 let stringField = (json, name) =>
   field(json, name)
   ->JSON.Decode.string
   ->Option.getOrThrow(~message=`Expected a string in JSON field: ${name}`)
+
 let assertContains = (actual, expected, message) =>
   Assert.ok(actual->String.includes(expected), message)
 
@@ -52,8 +56,10 @@ let verifyProject = async (context: P.context, directory, suffix) => {
     )
   | _ => ()
   }
+
   let version =
     P.readJson(Path.join2(directory, "node_modules/rescript/package.json"))->stringField("version")
+
   Assert.ok(
     version->String.startsWith("12."),
     `Expected a current ReScript 12 version, installed ${version}`,
@@ -90,19 +96,25 @@ let newProject = async (context, directory, ~target, ~devcontainer) => {
   | "." | "./" => true
   | _ => false
   }
+
   let project = currentDirectory ? directory : Path.join2(directory, target)
+
   let preserved = if devcontainer {
     Fs.mkdirSync(Path.join2(project, ".devcontainer"), {recursive: true})
+
     let metadata = currentDirectory
       ? [("README.md", "Existing README\n"), (".gitignore", "keep-this-entry\n")]
       : []
+
     [(".devcontainer/devcontainer.json", "{\"name\":\"keep me\"}\n"), ...metadata]
   } else {
     []
   }
+
   preserved->Array.forEach(((path, contents)) =>
     Fs.writeFileSync(Path.join2(project, path), contents)
   )
+
   let? Ok() = await P.cli(
     context,
     directory,
@@ -110,6 +122,7 @@ let newProject = async (context, directory, ~target, ~devcontainer) => {
     ~expected=0,
     ~prompts=[],
   )
+
   Assert.strictEqual(
     P.readJson(Path.join2(project, "package.json"))->stringField("name"),
     Path.basename(project),
@@ -129,10 +142,12 @@ let existingProject = async (
   | CommonJs => "commonjs"
   | EsModule => "module"
   }
+
   let devDependencies = switch typescript {
   | Some(_) => [("devDependencies", object([("typescript", String("5.9.3"))]))]
   | None => []
   }
+
   let original = object(
     [
       ("name", String(Path.basename(directory))),
@@ -144,8 +159,10 @@ let existingProject = async (
       ...devDependencies,
     ],
   )
+
   let? Ok() = P.writeJson(Path.join2(directory, "package.json"), original)
   Fs.mkdirSync(Path.join2(directory, "src"), {recursive: true})
+
   let tsPreserved = switch typescript {
   | None => []
   | Some(resolution) =>
@@ -153,6 +170,7 @@ let existingProject = async (
     | NodeNext => ("NodeNext", "nodenext")
     | Bundler => ("ESNext", "bundler")
     }
+
     Fs.writeFileSync(
       Path.join2(directory, "tsconfig.json"),
       `{
@@ -185,30 +203,36 @@ let existingProject = async (
       ),
     ]
   }
+
   let preserved = [
     ("README.md", "Existing project README\n"),
     (".gitignore", "existing-ignore\n"),
     ("src/original.cjs", "console.log(require(\"is-number\")(42));\n"),
     ...tsPreserved,
   ]
+
   preserved->Array.forEach(((path, contents)) =>
     Fs.writeFileSync(Path.join2(directory, path), contents)
   )
   let? Ok(_) = await P.run(context, [context.info.command, "install"], directory)
+
   let modulePrompts = switch typescript {
   | Some(resolution) =>
     let extensionPrompts = switch resolution {
     | NodeNext => []
     | Bundler => [("Set compilerOptions.allowImportingTsExtensions to true", "y")]
     }
+
     [("Set compilerOptions.allowJs to true", "y"), ...extensionPrompts]
   | None =>
     let answer = switch moduleSystem {
     | CommonJs => "\x1b[B\r"
     | EsModule => "\r"
     }
+
     [("What module system will you use?", answer)]
   }
+
   let? Ok() = await P.cli(
     context,
     directory,
@@ -222,6 +246,7 @@ let existingProject = async (
       ("Do you want to check generated", "n"),
     ],
   )
+
   let packageJson = P.readJson(Path.join2(directory, "package.json"))
   ["name", "version", "private", "type"]->Array.forEach(name =>
     Assert.deepStrictEqual(
@@ -250,10 +275,12 @@ let existingProject = async (
   | None => ()
   }
   verifyPreserved(directory, preserved)
+
   let suffix = switch (typescript, moduleSystem) {
   | (None, EsModule) => ".res.mjs"
   | _ => ".res.js"
   }
+
   Fs.readFileSync(Path.join2(directory, ".gitignore"))->assertContains(
     `**/*${suffix}`,
     "Generated JS was not ignored",
@@ -265,6 +292,7 @@ let existingProject = async (
     | NodeNext => ("node16", "js")
     | Bundler => ("bundler", "ts")
     }
+
     let config = P.readJson(Path.join2(directory, "rescript.json"))
     Assert.strictEqual(
       field(config, "gentypeconfig")->stringField("moduleResolution"),
@@ -301,11 +329,13 @@ let existingProject = async (
       Fs.existsSync(Path.join2(directory, "src/Interop.gen.ts")),
       "genType did not generate TypeScript",
     )
+
     let? Ok(_) = await P.run(
       context,
       ["node", "node_modules/typescript/bin/tsc", "--noEmit"],
       directory,
     )
+
     Ok()
   }
 }
@@ -315,6 +345,7 @@ let occupiedDirectory = async (context, directory) => {
   Fs.mkdirSync(project, {recursive: true})
   let sentinel = Path.join2(project, "keep.txt")
   Fs.writeFileSync(sentinel, "Do not overwrite\n")
+
   let? Ok() = await P.cli(
     context,
     directory,
@@ -322,6 +353,7 @@ let occupiedDirectory = async (context, directory) => {
     ~expected=1,
     ~prompts=[],
   )
+
   Assert.strictEqual(
     Fs.readFileSync(sentinel),
     "Do not overwrite\n",
@@ -349,6 +381,7 @@ let scenarios = (context: P.context) => {
         existingProject(context, directory, ~moduleSystem=CommonJs, ~typescript=None),
     },
   ]
+
   switch context.manager {
   | Npm =>
     [

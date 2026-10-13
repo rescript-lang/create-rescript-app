@@ -32,11 +32,13 @@ let runSuite = async (context, options: P.options) => {
 
 let runInWorkspace = async (options, workspace) => {
   let? Ok(context) = P.makeContext(options, workspace)
+
   let outcome = try {
     await runSuite(context, options)
   } catch {
   | JsExn(cause) => Error(#TestFailure(cause))
   }
+
   switch outcome {
   | Ok() => ()
   | Error(_) =>
@@ -56,21 +58,26 @@ let main = async () => {
   | "linux" => Ok()
   | platform => Error(#UnsupportedPlatform(platform))
   }
+
   let? Ok(options) = parseArguments(
     Process.argv->Array.slice(~start=2)->List.fromArray,
     {packagePath: None, manager: None, logs: None},
   )
+
   let prefix = Path.join2(Os.tmpdir(), "cra e2e ")
   let? Ok(workspace) = P.fileOperation(prefix, () => Fs.mkdtempSync(prefix))
+
   let outcome = try await runInWorkspace(options, workspace) catch {
   | JsExn(cause) => Error(#TestFailure(cause))
   }
+
   let cleanup = try {
     await Fs.Promises.rm(workspace, ~options={recursive: true, force: true})
     Ok()
   } catch {
   | JsExn(cause) => Error(#FileError({P.path: workspace, cause}))
   }
+
   switch (outcome, cleanup) {
   | (Error(primary), Error(secondary)) =>
     Console.error(`Workspace cleanup also failed:\n${P.formatError(secondary)}`)

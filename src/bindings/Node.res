@@ -170,10 +170,12 @@ module ChildProcess = {
 
   @module("node:child_process")
   external spawnUnsafe: (string, array<string>, options) => t = "spawn"
+
   let spawn = (command, args, options) =>
     try Ok(spawnUnsafe(command, args, options)) catch {
     | JsExn(error) => Error(#SpawnError(error))
     }
+
   @get external pid: t => option<int> = "pid"
   @get external stdout: t => readable = "stdout"
   @get external stderr: t => readable = "stderr"
@@ -186,6 +188,7 @@ module ChildProcess = {
   external onClose: (t, @as("close") _, (Nullable.t<int>, Nullable.t<string>) => unit) => unit =
     "once"
   @send external writeUnsafe: (writable, string) => unit = "write"
+
   let write = (stream, text) =>
     try {
       writeUnsafe(stream, text)
@@ -193,12 +196,14 @@ module ChildProcess = {
     } catch {
     | JsExn(error) => Error(#InputError(error))
     }
+
   @send external destroyInput: writable => unit = "destroy"
 
   type syncOptions = {cwd: string, stdio: string}
   type syncResult = {status: Nullable.t<int>, error?: JsExn.t}
   @module("node:child_process")
   external spawnSyncUnsafe: (string, array<string>, syncOptions) => syncResult = "spawnSync"
+
   let spawnSync = (command, args, options) =>
     try {
       let result = spawnSyncUnsafe(command, args, options)

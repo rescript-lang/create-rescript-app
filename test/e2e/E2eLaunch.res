@@ -5,6 +5,7 @@ let launch = () =>
   switch (Process.argv->Array.get(2), Process.env->Dict.get("CRA_E2E_CLI")) {
   | (Some(directory), Some(cliPath)) =>
     let args = Process.argv->Array.slice(~start=3)
+
     let? Ok(result) = ChildProcess.spawnSync(
       Process.execPath,
       [cliPath, ...args],
@@ -13,6 +14,7 @@ let launch = () =>
         stdio: "inherit",
       },
     )
+
     Ok(result.status->Nullable.toOption->Option.getOr(1))
   | _ => Error(#InvalidArguments("Expected a project directory and CRA_E2E_CLI"))
   }

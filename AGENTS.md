@@ -13,6 +13,7 @@
 - Keep parameters mandatory unless callers need to omit them.
 - Do not add redundant parentheses around switch expressions: use `switch value { ... }`. Parentheses required by tuple syntax are fine.
 - Formatting is enforced by `rescript format`; keep 2-space indentation and prefer pattern matching over chained conditionals.
+- Separate multiline `let` bindings (including `let?`) and type definitions from surrounding statements or declarations with a blank line before and after. Keep attached comments and attributes together with the declaration.
 - Prefer `result` values over exceptions for expected failure paths; only raise or throw at clear integration boundaries where the surrounding API requires it.
 - Use `let?` to unwrap and propagate `Option`/`Result` failures where it simplifies the code. `LetUnwrap` is enabled in `rescript.json`.
 - Prefer pattern matching over `if`/`else` chains when branching on the shape or state of the same value; plain comparisons across different values are fine with `if`/`else`.

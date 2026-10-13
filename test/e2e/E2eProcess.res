@@ -3,6 +3,7 @@ open Node
 type manager = Npm | Pnpm | YarnClassic | YarnBerry | Bun
 type managerInfo = {name: string, command: string, lockfile: string}
 type options = {packagePath: string, manager: manager, logs: string}
+
 type context = {
   manager: manager,
   info: managerInfo,
@@ -12,11 +13,13 @@ type context = {
   launcher: string,
   env: Dict.t<string>,
 }
+
 type prompt = (string, string)
 type commandMode = Piped | Terminal(array<prompt>)
 type fileError = {path: string, cause: JsExn.t}
 type exitError = {command: string, actual: option<int>, signal: option<string>, expected: int}
 type promptError = {answered: int, expected: int}
+
 type error = [
   | #InvalidArguments(string)
   | #UnsupportedPlatform(string)
@@ -48,6 +51,7 @@ let formatError = (error: error) =>
     | Some(code) => code->Int.toString
     | None => signal->Option.getOr("unknown signal")
     }
+
     `Command exited ${status}, expected ${expected->Int.toString}: ${command}`
   | #UnansweredPrompts({answered, expected}) =>
     `CLI exited after answering ${answered->Int.toString} of ${expected->Int.toString} prompts`
@@ -61,6 +65,7 @@ let fileOperation = (path, perform) =>
 
 let writeFile = (path, contents) => fileOperation(path, () => Fs.writeFileSync(path, contents))
 let makeDirectory = path => fileOperation(path, () => Fs.mkdirSync(path, {recursive: true}))
+
 let appendLog = (context, contents) =>
   fileOperation(context.log.contents, () => Fs.appendFileSync(context.log.contents, contents))
 
@@ -135,6 +140,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
 > => {
   let commandText = shellJoin(command)
   let? Ok() = appendLog(context, `\n$ ${commandText}\n(cwd: ${cwd})\n`)
+
   // util-linux script supplies a real terminal; all control and assertions are ReScript.
   let (executable, args, prompts, stdinMode) = switch mode {
   | Terminal(prompts) => (
@@ -156,6 +162,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
     | list{} => Assert.fail("Cannot run an empty command")
     }
   }
+
   let? Ok(child) = ChildProcess.spawn(
     executable,
     args,
@@ -166,22 +173,26 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
       stdio: [stdinMode, "pipe", "pipe"],
     },
   )
+
   // Mutable state is confined to this command's Node event callbacks.
   let output = ref("")
   let pending = ref("")
   let nextPrompt = ref(0)
   let failure = ref(None)
   let forceKill = ref(None)
+
   let recordFailure = error =>
     switch failure.contents {
     | None => failure := Some(error)
     | Some(_) => ()
     }
+
   let stop = signal =>
     switch killGroup(child, signal) {
     | Ok() => ()
     | Error(error) => recordFailure(error)
     }
+
   let terminate = () => {
     stop("SIGTERM")
     switch forceKill.contents {
@@ -189,13 +200,16 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
     | Some(_) => ()
     }
   }
+
   let timeout = Timer.setTimeout(() => {
     recordFailure(#CommandTimedOut(commandText))
     terminate()
   }, timeoutMs)
+
   let collect = chunk => {
     output := output.contents ++ chunk
     pending := pending.contents ++ chunk
+
     let outcome = () => {
       let? Ok() = appendLog(context, chunk)
       switch (prompts->Array.get(nextPrompt.contents), child->ChildProcess.stdin) {
@@ -207,6 +221,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
       | _ => Ok()
       }
     }
+
     switch outcome() {
     | Ok() => ()
     | Error(error) =>
@@ -214,6 +229,7 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
       terminate()
     }
   }
+
   [child->ChildProcess.stdout, child->ChildProcess.stderr]->Array.forEach(stream => {
     stream->ChildProcess.setEncoding
     stream->ChildProcess.onData(collect)
@@ -228,18 +244,22 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
       }
     })
   )
+
   let (code, signal) = await Promise.make((resolve, _reject) => {
     child->ChildProcess.onError(error => recordFailure(#SpawnError(error)))
     child->ChildProcess.onClose((code, signal) => resolve((code, signal)))
   })
+
   timeout->Timer.clearTimeout
   forceKill.contents->Option.forEach(Timer.clearTimeout)
   child->ChildProcess.stdin->Option.forEach(ChildProcess.destroyInput)
+
   // No early propagation until timers and streams have been cleaned up.
   let? Ok() = switch failure.contents {
   | Some(error) => Error(error)
   | None => Ok()
   }
+
   let actual = code->Nullable.toOption
   switch (actual === Some(expected), nextPrompt.contents === prompts->Array.length) {
   | (false, _) =>
@@ -260,6 +280,7 @@ let cli = async (context, cwd, ~args, ~expected, ~prompts) => {
   | Npm => ["--"]
   | _ => []
   }
+
   let? Ok(_) = await runCommand(
     context,
     [context.info.command, "run", "cra", ...separator, cwd, ...args],
@@ -268,6 +289,7 @@ let cli = async (context, cwd, ~args, ~expected, ~prompts) => {
     ~mode=Terminal(prompts),
     ~timeoutMs=300_000,
   )
+
   Ok()
 }
 
@@ -275,16 +297,19 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
   let? Ok(_) = await run(context, ["node", "--version"], context.workspace)
   let? Ok(_) = await run(context, [context.info.command, "--version"], context.workspace)
   let cliDirectory = Path.join2(context.workspace, "cli")
+
   let? Ok(_) = await run(
     context,
     ["npm", "install", "--prefix", cliDirectory, Path.resolve(packagePath)],
     context.workspace,
   )
+
   context.env->Dict.set(
     "CRA_E2E_CLI",
     Path.join2(cliDirectory, "node_modules/create-rescript-app/out/create-rescript-app.cjs"),
   )
   let? Ok() = makeDirectory(context.launcher)
+
   let? Ok() = writeJson(
     Path.join2(context.launcher, "package.json"),
     JSON.parseOrThrow(
@@ -295,11 +320,13 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
   }`,
     ),
   )
+
   let? Ok() = switch context.manager {
   | YarnBerry =>
     writeFile(Path.join2(context.launcher, ".yarnrc.yml"), "nodeLinker: node-modules\n")
   | _ => Ok()
   }
+
   let? Ok(_) = await run(context, [context.info.command, "install"], context.launcher)
   Ok()
 }
@@ -310,9 +337,11 @@ let runCase = async (context, name, perform) => {
   let directory = Path.join2(context.workspace, name)
   let? Ok() = makeDirectory(directory)
   Console.log(`RUN ${context.info.name}: ${name}`)
+
   let? Ok() = try await perform(directory) catch {
   | JsExn(cause) => Error(#TestFailure(cause))
   }
+
   Console.log(`PASS ${context.info.name}: ${name}`)
   Ok()
 }
