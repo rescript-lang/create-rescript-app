@@ -138,8 +138,9 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
   let? Ok() = appendLog(context, `\n$ ${commandText}\n(cwd: ${cwd})\n`)
 
   // util-linux script supplies a real terminal; all control and assertions are ReScript.
-  let (executable, args, prompts, stdinMode) = switch mode {
-  | Terminal(prompts) => (
+  let? Ok((executable, args, prompts, stdinMode)) = switch mode {
+  | Terminal(prompts) =>
+    Ok((
       "script",
       [
         "--quiet",
@@ -151,11 +152,11 @@ let runCommand = async (context, command, cwd, ~expected, ~mode, ~timeoutMs): re
       ],
       prompts,
       "pipe",
-    )
+    ))
   | Piped =>
     switch command->List.fromArray {
-    | list{executable, ...args} => (executable, args->List.toArray, [], "ignore")
-    | list{} => Assert.fail("Cannot run an empty command")
+    | list{executable, ...args} => Ok((executable, args->List.toArray, [], "ignore"))
+    | list{} => Error(#InvalidArguments("Cannot run an empty command"))
     }
   }
 
@@ -308,12 +309,12 @@ let setup = async (context, ~packagePath, ~launcherPath) => {
 
   let? Ok() = writeJson(
     Path.join2(context.launcher, "package.json"),
-    JSON.parseOrThrow(
-      `{
-    "name": "cra-e2e-launcher",
-    "private": true,
-    "scripts": {"cra": ${JSON.stringify(JSON.String(shellJoin(["node", launcherPath])))}}
-  }`,
+    JSON.Object(
+      dict{
+        "name": JSON.String("cra-e2e-launcher"),
+        "private": JSON.Boolean(true),
+        "scripts": JSON.Object(dict{"cra": JSON.String(shellJoin(["node", launcherPath]))}),
+      },
     ),
   )
 

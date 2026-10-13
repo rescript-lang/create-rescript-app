@@ -37,11 +37,7 @@ let runSuite = async (context, options: P.options) => {
 let runInWorkspace = async (options, workspace) => {
   let? Ok(context) = P.makeContext(options, workspace)
 
-  let outcome = try {
-    await runSuite(context, options)
-  } catch {
-  | JsExn(cause) => Error(#TestFailure(cause))
-  }
+  let outcome = await runSuite(context, options)
 
   switch outcome {
   | Ok() => ()
@@ -71,9 +67,7 @@ let main = async () => {
   let prefix = Path.join2(Os.tmpdir(), "cra e2e ")
   let? Ok(workspace) = NodeSafe.Fs.mkdtempSync(prefix)
 
-  let outcome = try await runInWorkspace(options, workspace) catch {
-  | JsExn(cause) => Error(#TestFailure(cause))
-  }
+  let outcome = await runInWorkspace(options, workspace)
 
   let cleanup = await NodeSafe.Fs.Promises.rm(workspace, ~options={recursive: true, force: true})
 

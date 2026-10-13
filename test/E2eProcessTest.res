@@ -27,6 +27,18 @@ let withContext = async perform => {
 }
 
 Test.describe("E2E command failures", () => {
+  Test.testAsync("returns an empty command as a validation error", () =>
+    withContext(
+      async context => {
+        switch await P.run(context, [], context.workspace) {
+        | Error(#InvalidArguments(message)) =>
+          Assert.strictEqual(message, "Cannot run an empty command")
+        | _ => Assert.fail("Expected an empty-command validation error")
+        }
+      },
+    )
+  )
+
   Test.testAsync("returns asynchronous spawn failures as values", () =>
     withContext(
       async context => {
