@@ -91,18 +91,9 @@ let main = async () => {
   }
 }
 
-let run = async () =>
-  switch await main() {
-  | Ok() => ()
-  | Error(error) =>
-    Console.error(P.formatError(error))
-    Process.state.exitCode = 1
-  }
-
-run()
-->Promise.catch(error => {
-  Console.error(error)
+switch await main() {
+| Ok() => ()
+| Error(error) =>
+  Console.error(P.formatError(error))
   Process.state.exitCode = 1
-  Promise.resolve()
-})
-->Promise.ignore
+}
