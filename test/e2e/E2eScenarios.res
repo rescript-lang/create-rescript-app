@@ -26,16 +26,19 @@ let assertContains = (actual, expected, message) =>
 let verifyProject = async (context: P.context, directory, suffix) => {
   let packageJson = P.readJson(Path.join2(directory, "package.json"))
   let config = P.readJson(Path.join2(directory, "rescript.json"))
-  Assert.strictEqual(
-    stringField(config, "name"),
-    stringField(packageJson, "name"),
-    ~message="Project and package names differ",
-  )
-  Assert.strictEqual(
-    stringField(config, "suffix"),
-    suffix,
-    ~message="Unexpected generated JS suffix",
-  )
+
+  let (projectName, actualSuffix) = switch config {
+  | Object(dict{"name": String(name), "suffix": String(suffix)}) => (name, suffix)
+  | _ => Assert.fail("Expected project name and generated JS suffix")
+  }
+
+  let (packageName, dependencies) = switch packageJson {
+  | Object(dict{"name": String(name), "dependencies": Object(dependencies)}) => (name, dependencies)
+  | _ => Assert.fail("Expected package name and dependencies")
+  }
+
+  Assert.strictEqual(projectName, packageName, ~message="Project and package names differ")
+  Assert.strictEqual(actualSuffix, suffix, ~message="Unexpected generated JS suffix")
   Assert.ok(
     Fs.existsSync(Path.join2(directory, context.info.lockfile)),
     `Missing ${context.info.lockfile}: manager detection failed`,
@@ -57,20 +60,18 @@ let verifyProject = async (context: P.context, directory, suffix) => {
   | _ => ()
   }
 
-  let version =
-    P.readJson(Path.join2(directory, "node_modules/rescript/package.json"))->stringField("version")
+  let version = switch P.readJson(Path.join2(directory, "node_modules/rescript/package.json")) {
+  | Object(dict{"version": String(version)}) => version
+  | _ => Assert.fail("Expected installed ReScript version")
+  }
 
   Assert.ok(
     version->String.startsWith("12."),
     `Expected a current ReScript 12 version, installed ${version}`,
   )
-  switch field(packageJson, "dependencies") {
-  | Object(dependencies) =>
-    Assert.ok(
-      !(dependencies->Dict.has("@rescript/core")),
-      "ReScript 12 should use its bundled standard library",
-    )
-  | _ => Assert.fail("Expected package dependencies")
+  switch dependencies {
+  | dict{"@rescript/core": ?None} => ()
+  | _ => Assert.fail("ReScript 12 should use its bundled standard library")
   }
   let? Ok(_) = await P.run(context, [context.info.command, "run", "res:build"], directory)
   let? Ok(output) = await P.run(context, ["node", `src/Demo${suffix}`], directory)
@@ -255,16 +256,19 @@ let existingProject = async (
       `Changed existing package field ${name}`,
     )
   )
-  Assert.deepStrictEqual(
-    field(packageJson, "scripts")->field("test"),
-    field(original, "scripts")->field("test"),
-    "Overwrote existing script",
-  )
-  Assert.strictEqual(
-    field(packageJson, "dependencies")->stringField("is-number"),
-    "7.0.0",
-    ~message="Changed existing dependency",
-  )
+  switch packageJson {
+  | Object(dict{
+      "scripts": Object(dict{"test": testScript}),
+      "dependencies": Object(dict{"is-number": String(version)}),
+    }) =>
+    Assert.deepStrictEqual(
+      testScript,
+      field(original, "scripts")->field("test"),
+      "Overwrote existing script",
+    )
+    Assert.strictEqual(version, "7.0.0", ~message="Changed existing dependency")
+  | _ => Assert.fail("Expected existing package script and dependency")
+  }
   switch typescript {
   | Some(_) =>
     Assert.deepStrictEqual(
@@ -294,11 +298,11 @@ let existingProject = async (
     }
 
     let config = P.readJson(Path.join2(directory, "rescript.json"))
-    Assert.strictEqual(
-      field(config, "gentypeconfig")->stringField("moduleResolution"),
-      gentypeResolution,
-      ~message="Incorrect genType mapping",
-    )
+    switch config {
+    | Object(dict{"gentypeconfig": Object(dict{"moduleResolution": String(actual)})}) =>
+      Assert.strictEqual(actual, gentypeResolution, ~message="Incorrect genType mapping")
+    | _ => Assert.fail("Expected genType module resolution")
+    }
     let tsconfig = Fs.readFileSync(Path.join2(directory, "tsconfig.json"))
     tsconfig->assertContains("// Preserve this comment", "Lost tsconfig comment")
     tsconfig->assertContains("\"allowJs\": true", "Did not enable allowJs")

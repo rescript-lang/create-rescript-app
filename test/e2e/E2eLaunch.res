@@ -2,8 +2,8 @@ open Node
 
 // A real package script supplies the selected manager's identity to the CLI.
 let launch = () =>
-  switch (Process.argv->Array.get(2), Process.env->Dict.get("CRA_E2E_CLI")) {
-  | (Some(directory), Some(cliPath)) =>
+  switch (Process.argv->Array.get(2), Process.env) {
+  | (Some(directory), dict{"CRA_E2E_CLI": cliPath}) =>
     let args = Process.argv->Array.slice(~start=3)
 
     let? Ok(result) = ChildProcess.spawnSync(
