@@ -6,13 +6,24 @@
 
 ## Coding Style & Naming Conventions
 
-- Make sure to use modern ReScript and not Reason syntax! Read https://rescript-lang.org/llms/manual/llm-small.txt to learn the language syntax.
+- Use ReScript 12 syntax and the built-in standard library, not Reason syntax. Read https://rescript-lang.org/llms/manual/llm-small.txt to learn the language syntax.
+- Prefer `Option`, `Result`, `Array`, `List`, `Dict`, `Set`, `Map`, and `JSON` over `Js.*` or `Belt.*`.
+- Prefer `dict{...}` patterns for known dictionary keys and nested JSON shapes; use `Dict.get` for dynamic keys.
+- Match `Nullable.t` directly with `Value`, `Null`, and `Undefined`, and use `Nullable.getOr` for defaults instead of converting to `option`.
+- Match local style; avoid old BuckleScript/ReScript-era patterns.
+- Write new tests and test helpers in ReScript under `test/`. Prefer records and functions over classes.
+- Reuse existing application types in tests instead of redefining them.
+- Keep parameters mandatory unless callers need to omit them.
+- Do not add redundant parentheses around switch expressions: use `switch value { ... }`. Parentheses required by tuple syntax are fine.
 - Formatting is enforced by `rescript format`; keep 2-space indentation and prefer pattern matching over chained conditionals.
+- Separate multiline `let` bindings (including `let?`) and type definitions from surrounding statements or declarations with a blank line before and after. Keep attached comments and attributes together with the declaration.
 - Prefer `result` values over exceptions for expected failure paths; only raise or throw at clear integration boundaries where the surrounding API requires it.
+- Use `let?` to unwrap and propagate `Option`/`Result` failures where it simplifies the code. `LetUnwrap` is enabled in `rescript.json`.
 - Prefer pattern matching over `if`/`else` chains when branching on the shape or state of the same value; plain comparisons across different values are fine with `if`/`else`.
 - Do not run `rescript`, `npm test`, or `npm run prepack` in parallel; ReScript compiler artifacts are not safe for concurrent builds in this repo.
-- Module files are PascalCase (`Templates.res`), values/functions camelCase, types/variants PascalCase, and records snake_case fields only when matching external JSON.
+- Module files and variant constructors are PascalCase (`Templates.res`), values/functions and type names camelCase, and records use snake_case fields only when matching external JSON.
 - Keep `.resi` signatures accurate and minimal; avoid exposing helpers that are template-specific.
+- Keep raw Node.js bindings in `src/bindings/Node.res`. Put exception-to-result/option wrappers in `src/bindings/NodeSafe.res`, using small concrete helpers.
 - When touching templates, mirror upstream defaults and keep package scripts consistent with the chosen toolchain.
 
 ## Package Manager Support
@@ -40,6 +51,7 @@
 ## Testing and Validation
 
 - **Automated Tests**: Run `npm test` for automated coverage of CLI parsing and related helpers
+- **Installation E2E**: Run `npm pack`, then `npm run test:e2e -- --package <tarball> --manager <manager> --logs <directory>`. Requires Linux, util-linux `script`, and the selected package manager; use the versions in `.github/workflows/ci.yml`.
 - **Manual Testing**: Perform smoke tests by running the CLI into a temp directory
 - **CI Preview Testing**: To test a pkg.pr.new build from CI, run `npm exec --yes --package=https://pkg.pr.new/rescript-lang/create-rescript-app/create-rescript-app@<commit> -- create-rescript-app my-app --template vite` and replace `<commit>` with the SHA from the pkg.pr.new CI comment.
 - **Template Validation**: After changes, test each template type (basic/Next.js/Vite) to ensure templates bootstrap cleanly
