@@ -5,9 +5,8 @@ A server-rendered starter for [xote](https://github.com/brnrdog/xote) apps. Rend
 ## Stack
 
 - ReScript v12 (JSX transform: `XoteJSX`)
-- xote ^6.2 — uses `SSR.renderToString`, `SSRState`, and `Hydration`
-- rescript-signals
-- Vite 7 — runs in middleware mode for dev, and produces both client and SSR bundles for production
+- xote ^7.2 — uses `SSR.renderToString`, `SSRState`, and `Hydration`
+- Vite 8 — runs in middleware mode for dev, and produces both client and SSR bundles for production
 - Tailwind CSS v4 (`@tailwindcss/vite`)
 
 ## Layout
@@ -17,16 +16,36 @@ A server-rendered starter for [xote](https://github.com/brnrdog/xote) apps. Rend
 ├── index.html            # template with <!--app-html--> and <!--app-state--> placeholders
 ├── server.mjs            # Node HTTP server (Vite middleware in dev, static + SSR in prod)
 ├── vite.config.mjs
-├── rescript.json
+├── rescript.json         # JSX v4 + XoteJSX module, xote PPX, -open Xote
 ├── package.json
 └── src/
     ├── styles.css
-    ├── Counter.res       # uses SSRState.signal so state survives hydration
+    ├── Counter.res       # @xote.component; SSRState.signal survives hydration
     ├── Page.res          # landing page composition
     ├── App.res           # shared `view` thunk used by server and client
     ├── Server.res        # exports render() → { html, stateScript }
     └── Client.res        # imports styles, calls Hydration.hydrateById
 ```
+
+## Writing components
+
+Components use the `@xote.component` annotation, enabled by `"ppx-flags": ["xote/ppx/ppx"]` in `rescript.json`. It derives props like `@jsx.component` and makes the returned JSX fine-grained: read signals inline and only the attribute or text that reads them updates.
+
+```rescript
+@xote.component
+let make = (~label: string) => {
+  let count = Signal.make(0)
+
+  <button onClick={_ => Signal.update(count, n => n + 1)}>
+    {`${label}: `}
+    {Signal.get(count)}
+  </button>
+}
+```
+
+Bare `{…}` children (strings, numbers, signal reads, nodes) render directly — no `View.text` needed. A signal read hidden behind a function from another module, or hoisted into a `let`, is read once; wrap it in a thunk (`{() => Store.total(store)}`) to keep it reactive. See the [xote docs](https://xote.dev/) for more.
+
+The PPX ships as a prebuilt binary installed by xote's `postinstall` script. `package.json` already allows that script for pnpm (`pnpm.onlyBuiltDependencies`) and bun (`trustedDependencies`); if your package manager skipped it, run `node node_modules/xote/ppx/postinstall.js` once.
 
 ## How it fits together
 
