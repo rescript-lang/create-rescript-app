@@ -5,9 +5,7 @@ let make = () => {
       class="max-w-2xl w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-8 space-y-8"
     >
       <header class="space-y-2">
-        <p class="text-xs uppercase tracking-widest text-slate-500">
-          {"xote · ssr template"}
-        </p>
+        <p class="text-xs uppercase tracking-widest text-slate-500"> {"xote · ssr template"} </p>
         <h1 class="text-3xl font-semibold"> {"Welcome to xote"} </h1>
         <p class="text-slate-600">
           {"A clean slate for building reactive UIs in ReScript, rendered on the server and hydrated on the client."}
@@ -17,8 +15,8 @@ let make = () => {
         <h2 class="text-sm font-medium text-slate-700"> {"Tech stack"} </h2>
         <ul class="text-sm text-slate-600 space-y-1 list-disc pl-5">
           <li> {"ReScript v12 — typed language compiling to clean JavaScript"} </li>
-          <li> {"xote — fine-grained reactivity with SSR + hydration"} </li>
-          <li> {"Vite 7 — dev server (middleware mode) and bundler"} </li>
+          <li> {"xote 7 — fine-grained reactivity with SSR + hydration"} </li>
+          <li> {"Vite 8 — dev server (middleware mode) and bundler"} </li>
           <li> {"Tailwind CSS v4 — utility-first, CSS-first config"} </li>
         </ul>
       </section>

@@ -1,6 +1,7 @@
 @xote.component
 let make = () => {
   let count = SSRState.signal("count", 0, SSRState.Codec.int)
+  let doubled = Computed.make(() => Signal.get(count) * 2)
 
   let decrement = (_: Dom.event) => Signal.update(count, n => n - 1)
   let increment = (_: Dom.event) => Signal.update(count, n => n + 1)
@@ -11,7 +12,11 @@ let make = () => {
     >
       {"-"}
     </button>
-    <span class="font-mono text-xl tabular-nums">
+    <span
+      class={Signal.get(count) < 0
+        ? "font-mono text-xl tabular-nums text-red-600"
+        : "font-mono text-xl tabular-nums"}
+    >
       {Signal.get(count)}
     </span>
     <button
@@ -19,5 +24,6 @@ let make = () => {
     >
       {"+"}
     </button>
+    <span class="text-sm text-slate-500"> {`doubled: ${Signal.get(doubled)->Int.toString}`} </span>
   </div>
 }

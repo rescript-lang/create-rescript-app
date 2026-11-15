@@ -1,3 +1,3 @@
 %%raw(`import "./styles.css"`)
 
-let _ = Hydration.hydrateById(App.view, "root")
+Hydration.hydrateById(App.view, "root")
