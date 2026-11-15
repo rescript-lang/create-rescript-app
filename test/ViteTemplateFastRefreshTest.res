@@ -87,9 +87,7 @@ let assertDoesNotInclude = (actual, substring, message) =>
 let assertJsonObject = (json: JSON.t, message) =>
   switch json {
   | Object(object) => object
-  | _ =>
-    Assert.fail(message)
-    Dict.make()
+  | _ => Assert.fail(message)
   }
 
 let assertJsonMissing = (json: option<JSON.t>, message) =>
@@ -264,9 +262,7 @@ Test.describe("Vite template Fast Refresh", () => {
       ->assertJsonObject("Expected the Vite template rescript.json to be a JSON object.")
     let suffix = switch rescriptConfig->Dict.get("suffix") {
     | Some(String(suffix)) => suffix
-    | _ =>
-      Assert.fail("Expected the Vite template rescript.json to configure a suffix.")
-      ".res.mjs"
+    | _ => Assert.fail("Expected the Vite template rescript.json to configure a suffix.")
     }
 
     assertIncludes(

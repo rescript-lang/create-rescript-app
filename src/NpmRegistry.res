@@ -14,7 +14,7 @@ let defaultRegistryUrl = "https://registry.npmjs.org"
 
 let getNpmRegistry = () =>
   npm_config_registry
-  ->Option.flatMap(registry => registry->Node.Url.make)
+  ->Option.flatMap(registry => registry->NodeSafe.Url.make)
   ->Option.mapOr(defaultRegistryUrl, url => url->Node.Url.href)
 
 type fetchError =
